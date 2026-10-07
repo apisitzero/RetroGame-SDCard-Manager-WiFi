@@ -167,9 +167,10 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
             }
             return self.send_json(resp)
 
-        # 4. Gaming Systems (Filtered if Free)
+        # 4. Gaming Systems (Hides 0-game folders by default, sorts by game count)
         if path == '/api/systems':
-            systems = self.server.game_mgr.list_systems(is_premium=is_premium)
+            include_empty = query.get('all', ['false'])[0].lower() == 'true'
+            systems = self.server.game_mgr.list_systems(is_premium=is_premium, include_empty=include_empty)
             return self.send_json(systems)
 
         # 5. List Games (Filtered if Free)

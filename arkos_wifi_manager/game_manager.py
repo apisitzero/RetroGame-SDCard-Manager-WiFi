@@ -140,8 +140,40 @@ class ArkOSGameManager:
                 "root_path": self.roms_root, "error": str(e)
             }
 
-    def list_systems(self, is_premium=True):
-        """List all available systems that have ROM directories or games."""
+    def _count_system_games(self, sys_path, system_id=None):
+        """Ultra-fast count of valid game ROMs in a system directory."""
+        if not os.path.exists(sys_path) or not os.path.isdir(sys_path):
+            return 0
+        try:
+            count = 0
+            with os.scandir(sys_path) as it:
+                for entry in it:
+                    name_lower = entry.name.lower()
+                    if name_lower.startswith('.') or name_lower in ('gamelist.xml', 'images', 'boxart', 'downloaded_images', 'media', 'cheats'):
+                        continue
+                    if entry.is_file():
+                        ext = os.path.splitext(name_lower)[1]
+                        if ext in ROM_EXTENSIONS:
+                            count += 1
+                    elif entry.is_dir():
+                        # Subfolder game check (e.g. PS1 / Saturn folder)
+                        try:
+                            with os.scandir(entry.path) as sub_it:
+                                if any(os.path.splitext(s.name.lower())[1] in ('.cue', '.m3u', '.chd', '.iso', '.pbp') for s in sub_it if s.is_file()):
+                                    count += 1
+                        except Exception:
+                            pass
+            return count
+        except Exception:
+            return 0
+
+    def list_systems(self, is_premium=True, include_empty=False):
+        """
+        List available systems.
+        - Requirement 1: Filters out empty folders (game_count == 0).
+        - Requirement 2: Includes game_count for each system.
+        - Requirement 3: Sorts systems by game_count descending (most games first).
+        """
         systems = []
         if not os.path.exists(self.roms_root):
             return systems
@@ -161,6 +193,12 @@ class ArkOSGameManager:
                 if name.lower() in ('cheats', 'bios', 'backup', 'tools', 'system'):
                     continue
 
+            game_count = self._count_system_games(full_path, name)
+
+            # 1. Hide folders that have 0 games unless include_empty is True
+            if not include_empty and game_count == 0:
+                continue
+
             display_name = SYSTEM_NAMES.get(name.lower(), name.upper())
             icon = SYSTEM_ICONS.get(name.lower(), "gamepad")
 
@@ -168,8 +206,12 @@ class ArkOSGameManager:
                 "id": name,
                 "name": display_name,
                 "path": full_path,
-                "icon": icon
+                "icon": icon,
+                "game_count": game_count
             })
+
+        # 3. Sort folders: most games first, then alphabetically
+        systems.sort(key=lambda s: (-s["game_count"], s["name"].lower()))
 
         return systems
 
@@ -695,7 +737,7 @@ class ArkOSGameManager:
     def list_all_saves(self):
         """Scans all system directories for game save files (.sav, .srm, .state*)."""
         saves = []
-        systems = self.list_systems(is_premium=True)
+        systems = self.list_systems(is_premium=True, include_empty=True)
 
         for sys_info in systems:
             sys_id = sys_info["id"]

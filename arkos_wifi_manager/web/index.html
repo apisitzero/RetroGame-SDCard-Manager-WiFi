@@ -894,19 +894,27 @@
         function renderSystems(systems) {
             const container = document.getElementById('systemsList');
             if (!systems || systems.length === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4">ไม่พบโฟลเดอร์เกม</div>';
+                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-6"><i class="fa-solid fa-box-open text-2xl text-slate-600 mb-2"></i><div>ไม่พบระบบที่มีเกม</div></div>';
                 return;
             }
 
             container.innerHTML = systems.map(s => {
                 const isActive = state.currentSystem === s.id;
                 const activeCls = isActive 
-                    ? 'bg-indigo-600 text-white font-medium shadow-md' 
-                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white';
+                    ? 'bg-indigo-600 text-white font-bold shadow-md ring-1 ring-indigo-400/50' 
+                    : 'text-slate-200 hover:bg-slate-800/90 hover:text-white';
+                const countBadgeCls = isActive
+                    ? 'bg-white/25 text-white font-bold'
+                    : 'bg-slate-800 text-indigo-300 font-bold border border-slate-700/80 group-hover:border-indigo-500/50';
                 return `
-                    <button onclick="selectSystem('${s.id}')" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition shrink-0 ${activeCls}">
-                        <i class="fa-solid fa-${s.icon || 'gamepad'} text-sm opacity-80"></i>
-                        <span class="truncate">${s.name}</span>
+                    <button onclick="selectSystem('${s.id}')" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-xs transition shrink-0 group ${activeCls}">
+                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                            <i class="fa-solid fa-${s.icon || 'gamepad'} text-sm opacity-90 shrink-0"></i>
+                            <span class="truncate text-left">${s.name}</span>
+                        </div>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 ml-1.5 shadow-sm ${countBadgeCls}">
+                            ${s.game_count || 0}
+                        </span>
                     </button>
                 `;
             }).join('');
@@ -1370,6 +1378,7 @@
                     document.getElementById('currentSysGameCount').innerText = `${state.games.length} เกม`;
                     renderGames(state.games);
                     loadStatus();
+                    loadSystems();
                 } else {
                     showToast('ลบเกมไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
