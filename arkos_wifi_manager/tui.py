@@ -62,9 +62,9 @@ def render_tui(ip: str, port: int, license_info: dict = None, pin: str = None) -
     lines.append(f"{WHITE}{BOLD} Instructions:{RESET}")
     lines.append(f"  {CYAN}1.{RESET} Open a browser and enter the IP address shown above.")
     lines.append(f"  {CYAN}2.{RESET} Once connected, manage your games from the web page.")
-    lines.append(f"  {CYAN}3.{RESET} To stop, close this terminal; the browser link will end too.")
+    lines.append(f"  {CYAN}3.{RESET} To exit: Press [B] or [SELECT + START] button on console.")
     lines.append(f"{CYAN}========================================================================{RESET}")
-    lines.append(f"{GRAY} Web Server is running on R36S. Press [Ctrl+C] or [B] button to exit{RESET}")
+    lines.append(f"{YELLOW}{BOLD} >> Press [B] or [SELECT + START] on console to exit to ArkOS <<{RESET}")
     return "\n".join(lines)
 
 def print_tui(ip: str, port: int, license_info: dict = None, pin: str = None):

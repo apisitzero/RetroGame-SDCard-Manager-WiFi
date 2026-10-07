@@ -151,6 +151,12 @@
                     <i class="fa-solid fa-plus"></i>
                     <span>ลงเกมใหม่ (ROM)</span>
                 </button>
+
+                <!-- Exit / Shutdown Button -->
+                <button onclick="confirmExitServer()" title="ปิดระบบและกลับสู่หน้าหลัก ArkOS บนเครื่องเล่นเกม" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600/80 hover:bg-rose-600 text-white shadow transition">
+                    <i class="fa-solid fa-power-off"></i>
+                    <span>ปิดระบบ (Exit)</span>
+                </button>
             </div>
         </div>
 
@@ -799,6 +805,26 @@
 
         function closeMembershipModal() {
             document.getElementById('memberModal').classList.add('hidden');
+        }
+
+        async function confirmExitServer() {
+            if (!confirm("คุณต้องการปิดระบบและกลับสู่หน้าหลัก ArkOS บนเครื่องเล่นเกมใช่หรือไม่?\n(เครื่องเกม R36S จะปิดโปรแกรมนี้ทันที)")) return;
+
+            try {
+                showToast("กำลังปิดระบบและกลับสู่ ArkOS...");
+                await fetch('/api/shutdown', { method: 'POST' });
+                document.body.innerHTML = `
+                    <div class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center text-slate-200">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-4 border border-emerald-500/30">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">ปิดระบบเรียบร้อยแล้ว</h2>
+                        <p class="text-sm text-slate-400 max-w-md">หน้าจอเครื่องเกม R36S ได้กลับสู่เมนูหลัก ArkOS เรียบร้อยแล้ว สามารถหยิบเครื่องเล่นเกมต่อได้ทันทีครับ</p>
+                    </div>
+                `;
+            } catch (err) {
+                showToast("ปิดระบบเรียบร้อยแล้ว");
+            }
         }
 
         // ================= Main Tabs Switching =================

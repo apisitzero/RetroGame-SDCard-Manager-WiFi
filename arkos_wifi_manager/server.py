@@ -25,6 +25,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import mimetypes
 import secrets
+import threading
+import time
 
 # Add current directory to path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +36,7 @@ if CURRENT_DIR not in sys.path:
 from tui import print_tui
 from game_manager import ArkOSGameManager
 from license_manager import LicenseManager
+from input_listener import ConsoleInputListener
 import scraper
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -324,6 +327,21 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
         path = parsed.path
         content_length = int(self.headers.get('Content-Length', 0))
         content_type = self.headers.get('Content-Type', '')
+        # 0. Clean Shutdown Endpoint (All Tiers)
+        if path == '/api/shutdown':
+            self.send_json({"success": True, "message": "Server is shutting down. Returning to ArkOS..."})
+            def delayed_exit():
+                time.sleep(0.5)
+                sys.stdout.write("\033[?25h\033[2J\033[H")
+                sys.stdout.flush()
+                print("\n========================================================================")
+                print(" [RetroGame Manager] Web Exit requested. Returning to ArkOS...")
+                print("========================================================================")
+                sys.stdout.flush()
+                os._exit(0)
+            threading.Thread(target=delayed_exit, daemon=True).start()
+            return
+
         is_premium = self.server.license_mgr.is_premium()
 
         # 1. Rename Game via Token (All Tiers)
@@ -532,19 +550,27 @@ def main():
     # Display TUI Screen on R36S Console
     print_tui(host_ip, port, license_info=license_mgr.get_license_data(), pin=pin)
 
-    def shutdown_handler(sig, frame):
+    def request_shutdown(reason="Gamepad Button"):
         sys.stdout.write("\033[?25h\033[2J\033[H")
         sys.stdout.flush()
-        print("\n[RetroGame-Manager v1.1] Exiting cleanly. Returning to ArkOS...")
-        sys.exit(0)
+        print("\n========================================================================")
+        print(f" [RetroGame Manager v1.1] Exit triggered: {reason}")
+        print(" Returning to ArkOS EmulationStation...")
+        print("========================================================================")
+        sys.stdout.flush()
+        os._exit(0)
 
-    signal.signal(signal.SIGINT, shutdown_handler)
-    signal.signal(signal.SIGTERM, shutdown_handler)
+    # Start Console Gamepad & Keyboard Input Listener
+    input_listener = ConsoleInputListener(on_exit_callback=request_shutdown)
+    input_listener.start()
+
+    signal.signal(signal.SIGINT, lambda s, f: request_shutdown("SIGINT (Ctrl+C)"))
+    signal.signal(signal.SIGTERM, lambda s, f: request_shutdown("SIGTERM"))
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        shutdown_handler(None, None)
+        request_shutdown("KeyboardInterrupt")
 
 if __name__ == "__main__":
     main()
