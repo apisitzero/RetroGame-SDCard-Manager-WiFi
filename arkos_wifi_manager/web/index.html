@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroGame & SD Card Manager Version WiFi v1.1 — เพจเล่าเรื่องเกม</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        themebg: 'var(--color-bg, #090d16)',
+                        themecard: 'var(--color-card, #131b2e)',
+                        themeborder: 'var(--color-border, #1e293b)',
+                        themeprimary: 'var(--color-primary, #6366f1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Prompt', sans-serif;
+        }
+        :root {
+            --color-bg: #090d16;
+            --color-card: #131b2e;
+            --color-border: #1e293b;
+            --color-primary: #6366f1;
+        }
+        /* Theme Classes */
+        body.theme-cyberpunk {
+            --color-bg: #08071a;
+            --color-card: #120e2e;
+            --color-border: #2d1b69;
+            --color-primary: #ec4899;
+        }
+        body.theme-purple {
+            --color-bg: #0f0c20;
+            --color-card: #1c1538;
+            --color-border: #31255e;
+            --color-primary: #8b5cf6;
+        }
+        body.theme-emerald {
+            --color-bg: #061412;
+            --color-card: #0d2621;
+            --color-border: #134e4a;
+            --color-primary: #10b981;
+        }
+        body.theme-amber {
+            --color-bg: #140d05;
+            --color-card: #26190a;
+            --color-border: #452b0c;
+            --color-primary: #f59e0b;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-themebg text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300">
+
+    <!-- ================= 4-Ad Fullscreen Overlay (Free Tier Only) ================= -->
+    <div id="adOverlay" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 hidden">
+        <div class="max-w-2xl w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
+            <div class="flex items-center justify-between w-full border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
+                    <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">โฆษณาสนับสนุนผู้พัฒนา (Free Tier)</span>
+                </div>
+                <div class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-mono font-bold" id="adTimerText">
+                    รอ 20 วินาที
+                </div>
+            </div>
+
+            <!-- Ad Image Container -->
+            <div class="relative w-full aspect-[16/9] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
+                <img id="adImage" src="/ads/ad1.png" alt="Advertisement" class="w-full h-full object-contain transition-opacity duration-300">
+                <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-0.5 rounded text-[10px] text-slate-400" id="adCounter">
+                    ป้าย 1 / 4
+                </div>
+            </div>
+
+            <!-- Upgrade callout -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 w-full bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-3 text-xs">
+                <div class="text-left">
+                    <span class="font-bold text-indigo-300">ไม่อยากรอนาน? อัปเกรดเป็น Premium</span>
+                    <p class="text-[11px] text-slate-400">เพียง 20 บาท/เดือน — ข้ามโฆษณาทันที + ปลดล็อคระบบเซฟ & สูตรโกงเกม</p>
+                </div>
+                <button onclick="openMembershipModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-pink-500 text-white rounded-lg font-medium text-xs shadow hover:opacity-90 shrink-0">
+                    ดูวิธีสมัคร
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Top Navigation Bar ================= -->
+    <header class="bg-slate-950/90 backdrop-blur border-b border-themeborder sticky top-0 z-30 px-4 py-3 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg text-white font-bold text-xl">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center gap-2">
+                        <span>RetroGame & SD Card Manager</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">v1.1</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span>เพจเล่าเรื่องเกม</span>
+                        <span class="text-slate-600">•</span>
+                        <span class="font-mono text-pink-400">BallModThaiGame</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- License Status & Quick Info -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- MAC Address & Copy -->
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-900 border border-slate-700 text-slate-300 font-mono">
+                    <i class="fa-solid fa-network-wired text-slate-400"></i>
+                    <span>MAC:</span>
+                    <span id="macText" class="font-bold text-white">-</span>
+                    <button onclick="copyMAC()" title="คัดลอก MAC Address ส่งให้แอดมิน" class="ml-1 text-slate-400 hover:text-indigo-400">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+
+                <!-- License Badge -->
+                <div id="licenseBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-slate-800 text-slate-300 border-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="licenseText">กำลังตรวจสอบสิทธิ์...</span>
+                </div>
+
+                <!-- Multi-ROM Upload Button -->
+                <button onclick="openUploadModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>ลงเกมใหม่ (ROM)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto flex items-center gap-1 mt-3 border-t border-slate-800/80 pt-2 overflow-x-auto">
+            <button onclick="switchMainTab('games')" id="tabBtnGames" class="px-4 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-gamepad"></i>
+                <span>จัดการเกม (Games)</span>
+            </button>
+            
+            <!-- Premium Only Tabs -->
+            <button onclick="switchMainTab('saves')" id="tabBtnSaves" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+                <i class="fa-solid fa-floppy-disk text-amber-400"></i>
+                <span>Save Manager</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">PRO</span>
+            </button>
+
+            <button onclick="switchMainTab('cheats')" id="tabBtnCheats" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+                <i class="fa-solid fa-wand-magic-sparkles text-emerald-400"></i>
+                <span>Cheat Manager</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">PRO</span>
+            </button>
+
+            <button onclick="switchMainTab('themes')" id="tabBtnThemes" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+                <i class="fa-solid fa-palette text-pink-400"></i>
+                <span>ธีมสี (Themes)</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">PRO</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ================= Main Body Content ================= -->
+    <main class="max-w-7xl mx-auto w-full p-4 flex-1 flex flex-col gap-4">
+        
+        <!-- Storage & System Bar -->
+        <div class="bg-themecard border border-themeborder rounded-2xl p-4 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="w-full md:w-auto flex-1 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-hard-drive"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="font-medium text-slate-300">พื้นที่ความจุ MicroSD Card:</span>
+                        <span class="font-mono text-indigo-300 font-semibold" id="diskUsageText">กำลังคำนวณ...</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
+                        <div id="diskProgressBar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                        <span id="diskFreeText">พื้นที่ว่าง...</span>
+                        <span id="diskPercentText" class="font-mono text-slate-300 font-medium">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Brand Badge -->
+            <div class="w-full md:w-auto flex items-center justify-end border-t md:border-t-0 md:border-l border-themeborder pt-3 md:pt-0 md:pl-4">
+                <div class="flex items-center gap-2.5 text-xs text-slate-400">
+                    <div class="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                    <div>
+                        <div class="text-slate-200 font-medium">เพจเล่าเรื่องเกม & BallModThaiGame</div>
+                        <div class="text-[10px] text-slate-400">สนับสนุนม็อดภาษาไทย & เกมเรโทร</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= View 1: Games Tab ================= -->
+        <div id="viewGames" class="flex flex-col lg:flex-row gap-4 items-start flex-1">
+            <!-- Systems Sidebar -->
+            <div class="w-full lg:w-64 bg-themecard border border-themeborder rounded-2xl p-3 shadow-lg flex flex-col gap-2 shrink-0">
+                <div class="flex items-center justify-between px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>ระบบเครื่องเล่น (<span id="systemsCount">0</span>)</span>
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div id="systemsList" class="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-y-auto max-h-[140px] lg:max-h-[600px] p-1">
+                    <div class="text-xs text-slate-500 text-center py-4">กำลังโหลดระบบเกม...</div>
+                </div>
+            </div>
+
+            <!-- Games Grid Container -->
+            <div class="w-full flex-1 bg-themecard border border-themeborder rounded-2xl p-4 shadow-lg flex flex-col gap-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-themeborder pb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg">
+                            <i id="currentSysIcon" class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                                <span id="currentSysName">เลือกระบบเกม</span>
+                                <span id="currentSysGameCount" class="text-xs font-normal px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">0 เกม</span>
+                            </h2>
+                            <p class="text-[11px] text-slate-400 font-mono" id="currentSysPath">/roms</p>
+                        </div>
+                    </div>
+
+                    <!-- Search & View Toggle -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                            <input type="text" id="searchInput" oninput="filterGames()" placeholder="ค้นหาชื่อเกมในระบบนี้..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-0.5">
+                            <button id="viewGridBtn" onclick="setViewMode('grid')" class="px-2.5 py-1 text-xs rounded bg-indigo-600 text-white"><i class="fa-solid fa-grip"></i></button>
+                            <button id="viewListBtn" onclick="setViewMode('list')" class="px-2.5 py-1 text-xs rounded text-slate-400 hover:text-white"><i class="fa-solid fa-list"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="gamesContainer" class="flex-1 min-h-[300px]">
+                    <div class="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
+                        <i class="fa-solid fa-gamepad text-4xl text-slate-700"></i>
+                        <span class="text-xs">เลือกระบบเครื่องเล่นด้านซ้ายเพื่อแสดงรายชื่อเกม</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= View 2: Save Manager (Premium Only) ================= -->
+        <div id="viewSaves" class="w-full bg-themecard border border-themeborder rounded-2xl p-5 shadow-lg flex-col gap-4 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-themeborder pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base text-slate-100">Save Manager (ระบบจัดการไฟล์เซฟ)</h2>
+                        <p class="text-xs text-slate-400">สำรองเซฟ, ดาวน์โหลด, และย้ายไฟล์เซฟไปเล่นเครื่องอื่น</p>
+                    </div>
+                </div>
+
+                <!-- Backup All Saves Button -->
+                <a href="/api/backup_all_saves" download class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold shadow-lg transition">
+                    <i class="fa-solid fa-file-zipper"></i>
+                    <span>สำรองเซฟทั้งหมด (.zip)</span>
+                </a>
+            </div>
+
+            <!-- Saves List -->
+            <div id="savesListContainer" class="divide-y divide-slate-800/80 overflow-hidden bg-slate-950/60 rounded-xl border border-slate-800">
+                <div class="p-8 text-center text-xs text-slate-500">กำลังดึงรายการไฟล์เซฟ...</div>
+            </div>
+        </div>
+
+        <!-- ================= View 3: Cheat Manager (Premium Only) ================= -->
+        <div id="viewCheats" class="w-full bg-themecard border border-themeborder rounded-2xl p-5 shadow-lg flex-col gap-4 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-themeborder pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base text-slate-100">Cheat Manager (ระบบสูตรโกง RetroArch)</h2>
+                        <p class="text-xs text-slate-400">ตรวจจับไฟล์ .cht, ติ๊กเลือกสูตรโกง และอัปโหลดชุดสูตร Zip</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="document.getElementById('cheatZipInput').click()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow transition">
+                        <i class="fa-solid fa-file-zipper"></i>
+                        <span>อัปโหลด Zip รวมสูตร</span>
+                    </button>
+                    <input type="file" id="cheatZipInput" accept=".zip" class="hidden" onchange="handleUploadCheatZip(event)">
+                </div>
+            </div>
+
+            <!-- Notice box -->
+            <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-3 flex items-center gap-3 text-xs text-emerald-300">
+                <i class="fa-solid fa-circle-info text-base"></i>
+                <span>หลังจากเปิด/ปิดสูตรแล้ว ให้ทำการรีสตาร์ทเกม หรือรีสตาร์ท EmulationStation เพื่อให้การตั้งค่ามีผล</span>
+            </div>
+
+            <!-- Cheats Games Browser -->
+            <div id="cheatsGamesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="col-span-full text-center py-10 text-xs text-slate-500">กำลังตรวจจับเกมที่มีไฟล์สูตร...</div>
+            </div>
+        </div>
+
+        <!-- ================= View 4: Themes (Premium Only) ================= -->
+        <div id="viewThemes" class="w-full bg-themecard border border-themeborder rounded-2xl p-5 shadow-lg flex-col gap-4 hidden">
+            <div class="border-b border-themeborder pb-3">
+                <h2 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-pink-400"></i>
+                    <span>เลือกธีมสีหน้าเว็บ (Custom Theme)</span>
+                </h2>
+                <p class="text-xs text-slate-400">สิทธิพิเศษเฉพาะสมาชิก Premium — เลือกเปลี่ยนโทนสีที่ชื่นชอบ</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <button onclick="setTheme('default')" class="p-4 rounded-xl border border-slate-700 bg-slate-900 text-left hover:border-indigo-500 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-indigo-400">Dark Gaming (Default)</span>
+                        <div class="w-4 h-4 rounded-full bg-indigo-600"></div>
+                    </div>
+                    <span class="text-[11px] text-slate-400">โทนสีมืดคลาสสิก สบายตา</span>
+                </button>
+
+                <button onclick="setTheme('cyberpunk')" class="p-4 rounded-xl border border-pink-900 bg-[#120e2e] text-left hover:border-pink-500 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-pink-400">Neon Cyberpunk</span>
+                        <div class="w-4 h-4 rounded-full bg-pink-500"></div>
+                    </div>
+                    <span class="text-[11px] text-slate-400">สีชมพูสะท้อนแสง สไตล์อนาคต</span>
+                </button>
+
+                <button onclick="setTheme('purple')" class="p-4 rounded-xl border border-purple-900 bg-[#1c1538] text-left hover:border-purple-500 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-purple-400">Retro Classic Purple</span>
+                        <div class="w-4 h-4 rounded-full bg-purple-600"></div>
+                    </div>
+                    <span class="text-[11px] text-slate-400">สีม่วงย้อนยุค สไตล์อาร์เคด</span>
+                </button>
+
+                <button onclick="setTheme('emerald')" class="p-4 rounded-xl border border-emerald-900 bg-[#0d2621] text-left hover:border-emerald-500 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-emerald-400">Emerald Forest</span>
+                        <div class="w-4 h-4 rounded-full bg-emerald-500"></div>
+                    </div>
+                    <span class="text-[11px] text-slate-400">สีเขียวมรกต เรียบหรู</span>
+                </button>
+
+                <button onclick="setTheme('amber')" class="p-4 rounded-xl border border-amber-900 bg-[#26190a] text-left hover:border-amber-500 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-amber-400">Sunset Amber</span>
+                        <div class="w-4 h-4 rounded-full bg-amber-500"></div>
+                    </div>
+                    <span class="text-[11px] text-slate-400">สีทองอบอุ่น สดใส</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= Modal: Multi-ROM Uploader with Review Popup ================= -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-themeborder p-4 bg-slate-900/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100">ลงเกมใหม่ (ROM Uploader)</h3>
+                        <p class="text-[11px] text-slate-400">รองรับเลือกหลายไฟล์, โฟลเดอร์เกม PS1 และ Drag & Drop</p>
+                    </div>
+                </div>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Step 1: Selection Dropzone -->
+            <div id="uploadSelectZone" class="p-6 flex flex-col gap-4">
+                <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition bg-slate-950/40" id="dropArea">
+                    <i class="fa-solid fa-folder-open text-4xl text-indigo-400 mb-2"></i>
+                    <span class="text-xs font-semibold text-slate-200">ลากไฟล์ ROM หรือโฟลเดอร์เกมมาวางที่นี่</span>
+                    <span class="text-[11px] text-slate-400 mt-1">หรือกดปุ่มเลือกด้านล่าง (รองรับทั้งไฟล์เดี่ยวและโฟลเดอร์ PS1)</span>
+                    
+                    <div class="flex items-center gap-2 mt-4">
+                        <button type="button" onclick="document.getElementById('multiFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-file"></i>
+                            <span>เลือกไฟล์เกม (หลายไฟล์)</span>
+                        </button>
+                        <button type="button" onclick="document.getElementById('folderInput').click()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-folder"></i>
+                            <span>เลือกโฟลเดอร์เกม (PS1)</span>
+                        </button>
+                    </div>
+                    <input type="file" id="multiFileInput" multiple class="hidden" onchange="handleFilesSelected(event)">
+                    <input type="file" id="folderInput" webkitdirectory directory class="hidden" onchange="handleFolderSelected(event)">
+                </div>
+            </div>
+
+            <!-- Step 2: Review List Popup -->
+            <div id="uploadReviewZone" class="p-4 flex-1 overflow-y-auto flex-col gap-3 hidden">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-300">รายการเกมที่ตรวจพบ (<span id="queueCount">0</span> เกม):</span>
+                    <button onclick="resetUploadQueue()" class="text-rose-400 hover:underline text-[11px]">เลือกใหม่</button>
+                </div>
+
+                <!-- Review Accordion/List grouped by System -->
+                <div id="reviewList" class="flex flex-col gap-2 max-h-[360px] overflow-y-auto"></div>
+
+                <!-- Progress Bar -->
+                <div id="uploadProgressContainer" class="hidden flex-col gap-1.5 pt-2 border-t border-slate-800">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span id="uploadStatusText">กำลังอัปโหลด...</span>
+                        <span id="uploadPercentText">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
+                        <div id="uploadProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom confirm button -->
+                <div class="flex justify-end gap-2 pt-3 border-t border-themeborder mt-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">ยกเลิก</button>
+                    <button type="button" id="btnStartBatchUpload" onclick="startBatchUpload()" class="px-5 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>ยืนยันและเริ่มอัปโหลดทั้งหมด</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: Cheat Detail & Toggle (Premium) ================= -->
+    <div id="cheatModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-themeborder pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100" id="cheatModalTitle">สูตรโกงเกม</h3>
+                        <p class="text-[11px] text-slate-400" id="cheatModalFile">-</p>
+                    </div>
+                </div>
+                <button onclick="closeCheatModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="cheatsList" class="flex flex-col gap-2 max-h-[300px] overflow-y-auto p-1">
+                <div class="text-xs text-slate-500 text-center py-6">กำลังโหลดสูตร...</div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-themeborder">
+                <div class="text-[11px] text-slate-500">ติ๊กถูกเพื่อเปิดใช้งานสูตร</div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeCheatModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white">ปิด</button>
+                    <button type="button" onclick="saveCheatToggles()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium shadow">
+                        บันทึกสูตร (Apply)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: Membership Info ================= -->
+    <div id="memberModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-themeborder pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h3 class="font-bold text-sm text-slate-100">สมัครสมาชิก Premium (20 บาท/เดือน)</h3>
+                </div>
+                <button onclick="closeMembershipModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="text-xs text-slate-300 flex flex-col gap-3 leading-relaxed">
+                <p>🔹 <strong>ขั้นตอนการสมัคร:</strong></p>
+                <ol class="list-decimal pl-5 space-y-1.5 text-slate-400">
+                    <li>กดปุ่ม <strong>"คัดลอก MAC Address"</strong> ด้านบนของเว็บนี้</li>
+                    <li>ส่งรหัส MAC ให้แอดมินที่ <strong>Facebook : เพจเล่าเรื่องเกม</strong></li>
+                    <li>ชำระเงินค่าสมาชิกเพียง 20 บาท/เดือน</li>
+                    <li>แอดมินจะส่งไฟล์เปิดระบบ Premium (.sh) ให้คุณนำไปวางในโฟลเดอร์ ports บนเครื่องเกม</li>
+                </ol>
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-slate-400">MAC Address ของคุณ:</span>
+                        <div class="font-mono text-white font-bold" id="memberModalMac">-</div>
+                    </div>
+                    <button onclick="copyMAC()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium">
+                        คัดลอก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs max-w-sm">
+            <span id="toastIcon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+            <span id="toastMessage">การทำงานสำเร็จ</span>
+        </div>
+    </div>
+
+    <!-- ================= JavaScript Application Logic ================= -->
+    <script>
+        // Constants
+        const AD_COUNT = 4;
+        const AD_SECONDS_EACH = 5;
+
+        const state = {
+            license: { tier: 'free', is_premium: false },
+            systems: [],
+            currentSystem: null,
+            games: [],
+            viewMode: 'grid',
+            activeTab: 'games',
+            uploadQueue: [],
+            currentCheatToken: null,
+            currentCheats: []
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            initDragAndDrop();
+            loadSavedTheme();
+        });
+
+        async function initApp() {
+            await loadStatus();
+            await loadSystems();
+            checkAndStartAdTimer();
+        }
+
+        function showToast(msg, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMessage');
+            text.innerText = msg;
+            icon.className = isSuccess ? 'text-emerald-400' : 'text-rose-400';
+            icon.innerHTML = isSuccess ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>';
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 3500);
+        }
+
+        async function loadStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                // License handling
+                state.license = data.license || { tier: 'free', is_premium: false };
+                updateLicenseUI(state.license);
+
+                // Disk info
+                if (data.disk) {
+                    const d = data.disk;
+                    document.getElementById('diskUsageText').innerText = `${d.used_gb} GB / ${d.total_gb} GB`;
+                    document.getElementById('diskFreeText').innerText = `ว่าง ${d.free_gb} GB จาก ${d.total_gb} GB`;
+                    document.getElementById('diskPercentText').innerText = `${d.percent}%`;
+                    document.getElementById('diskProgressBar').style.width = `${d.percent}%`;
+                }
+            } catch (err) {
+                console.error("Status error:", err);
+            }
+        }
+
+        function updateLicenseUI(lic) {
+            const macEl = document.getElementById('macText');
+            const memberMacEl = document.getElementById('memberModalMac');
+            const badge = document.getElementById('licenseBadge');
+            const text = document.getElementById('licenseText');
+
+            macEl.innerText = lic.device_mac || 'N/A';
+            if (memberMacEl) memberMacEl.innerText = lic.device_mac || 'N/A';
+
+            if (lic.is_premium) {
+                badge.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-amber-500/10 text-amber-300 border-amber-500/30';
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>💎 Premium (${lic.days_left} วัน)</span>`;
+                
+                // Show Premium Tabs
+                document.getElementById('tabBtnSaves').classList.remove('hidden');
+                document.getElementById('tabBtnCheats').classList.remove('hidden');
+                document.getElementById('tabBtnThemes').classList.remove('hidden');
+            } else {
+                badge.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-slate-800 text-slate-300 border-slate-700';
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span>🆓 Free Tier</span>`;
+                
+                // Hide Premium Tabs
+                document.getElementById('tabBtnSaves').classList.add('hidden');
+                document.getElementById('tabBtnCheats').classList.add('hidden');
+                document.getElementById('tabBtnThemes').classList.add('hidden');
+            }
+        }
+
+        // ================= 4-Ad Timer (Free Tier Only) =================
+        function checkAndStartAdTimer() {
+            if (state.license && state.license.is_premium) {
+                return; // Premium skips ads!
+            }
+
+            const overlay = document.getElementById('adOverlay');
+            overlay.classList.remove('hidden');
+
+            let currentAdIndex = 1;
+            let totalSecondsLeft = AD_COUNT * AD_SECONDS_EACH;
+
+            const adImage = document.getElementById('adImage');
+            const timerText = document.getElementById('adTimerText');
+            const counter = document.getElementById('adCounter');
+
+            timerText.innerText = `รอ ${totalSecondsLeft} วินาที`;
+            adImage.src = `/ads/ad1.png`;
+            counter.innerText = `ป้าย 1 / ${AD_COUNT}`;
+
+            const interval = setInterval(() => {
+                totalSecondsLeft--;
+                timerText.innerText = `รอ ${totalSecondsLeft} วินาที`;
+
+                // Switch ad image every 5 seconds
+                const elapsed = (AD_COUNT * AD_SECONDS_EACH) - totalSecondsLeft;
+                const nextAd = Math.min(Math.floor(elapsed / AD_SECONDS_EACH) + 1, AD_COUNT);
+                if (nextAd !== currentAdIndex) {
+                    currentAdIndex = nextAd;
+                    adImage.src = `/ads/ad${currentAdIndex}.png`;
+                    counter.innerText = `ป้าย ${currentAdIndex} / ${AD_COUNT}`;
+                }
+
+                if (totalSecondsLeft <= 0) {
+                    clearInterval(interval);
+                    overlay.classList.add('hidden');
+                    showToast('ปลดล็อคหน้าต่างใช้งานเรียบร้อยแล้ว');
+                }
+            }, 1000);
+        }
+
+        function copyMAC() {
+            const mac = state.license.device_mac || document.getElementById('macText').innerText;
+            navigator.clipboard.writeText(mac).then(() => {
+                showToast(`คัดลอก MAC Address: ${mac} แล้ว`);
+            });
+        }
+
+        function openMembershipModal() {
+            document.getElementById('memberModal').classList.remove('hidden');
+        }
+
+        function closeMembershipModal() {
+            document.getElementById('memberModal').classList.add('hidden');
+        }
+
+        // ================= Main Tabs Switching =================
+        function switchMainTab(tab) {
+            state.activeTab = tab;
+            const views = {
+                games: document.getElementById('viewGames'),
+                saves: document.getElementById('viewSaves'),
+                cheats: document.getElementById('viewCheats'),
+                themes: document.getElementById('viewThemes')
+            };
+
+            const btns = {
+                games: document.getElementById('tabBtnGames'),
+                saves: document.getElementById('tabBtnSaves'),
+                cheats: document.getElementById('tabBtnCheats'),
+                themes: document.getElementById('tabBtnThemes')
+            };
+
+            Object.keys(views).forEach(k => {
+                if (views[k]) views[k].classList.add('hidden');
+                if (btns[k]) btns[k].className = 'px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0';
+            });
+
+            if (views[tab]) views[tab].classList.remove('hidden');
+            if (btns[tab]) btns[tab].className = 'px-4 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition flex items-center gap-1.5 shrink-0';
+
+            if (tab === 'saves') loadSavesManager();
+            if (tab === 'cheats') loadCheatsManager();
+        }
+
+        // ================= Systems & Games =================
+        async function loadSystems() {
+            try {
+                const res = await fetch('/api/systems');
+                const data = await res.json();
+                state.systems = data;
+                document.getElementById('systemsCount').innerText = data.length;
+                renderSystems(data);
+                if (data.length > 0 && !state.currentSystem) {
+                    selectSystem(data[0].id);
+                }
+            } catch (err) {
+                console.error("Systems load error:", err);
+            }
+        }
+
+        function renderSystems(systems) {
+            const container = document.getElementById('systemsList');
+            if (!systems || systems.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4">ไม่พบโฟลเดอร์เกม</div>';
+                return;
+            }
+
+            container.innerHTML = systems.map(s => {
+                const isActive = state.currentSystem === s.id;
+                const activeCls = isActive 
+                    ? 'bg-indigo-600 text-white font-medium shadow-md' 
+                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white';
+                return `
+                    <button onclick="selectSystem('${s.id}')" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition shrink-0 ${activeCls}">
+                        <i class="fa-solid fa-${s.icon || 'gamepad'} text-sm opacity-80"></i>
+                        <span class="truncate">${s.name}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        async function selectSystem(sysId) {
+            state.currentSystem = sysId;
+            const sys = state.systems.find(s => s.id === sysId);
+            renderSystems(state.systems);
+
+            if (sys) {
+                document.getElementById('currentSysName').innerText = sys.name;
+                document.getElementById('currentSysPath').innerText = sys.path;
+                document.getElementById('currentSysIcon').className = `fa-solid fa-${sys.icon || 'gamepad'}`;
+            }
+
+            const container = document.getElementById('gamesContainer');
+            container.innerHTML = `<div class="py-20 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500 mb-2"></i><div>กำลังดึงข้อมูล...</div></div>`;
+
+            try {
+                const res = await fetch(`/api/games?system=${encodeURIComponent(sysId)}`);
+                const data = await res.json();
+                if (data.games) {
+                    state.games = data.games;
+                    document.getElementById('currentSysGameCount').innerText = `${data.games.length} เกม`;
+                    renderGames(data.games);
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="text-center py-10 text-rose-400 text-xs">เกิดข้อผิดพลาด: ${err.message}</div>`;
+            }
+        }
+
+        function renderGames(games) {
+            const container = document.getElementById('gamesContainer');
+            if (!games || games.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center text-xs text-slate-500"><i class="fa-solid fa-box-open text-4xl mb-2"></i><div>ไม่มีเกมในระบบนี้</div></div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="${state.viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5' : 'divide-y divide-slate-800 bg-slate-950/60 rounded-xl border border-slate-800'}">
+                    ${games.map((g, idx) => state.viewMode === 'grid' ? renderGameCard(g, idx) : renderGameRow(g, idx)).join('')}
+                </div>
+            `;
+        }
+
+        function renderGameCard(g, idx) {
+            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            return `
+                <div class="group bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-xl overflow-hidden flex flex-col transition hover:shadow-lg">
+                    <div class="relative aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/80">
+                        ${g.has_cover ? `
+                            <img src="${coverUrl}" alt="${escapeHtml(g.display_name)}" loading="lazy" class="w-full h-full object-contain p-1 group-hover:scale-105 transition">
+                        ` : `
+                            <i class="fa-solid fa-image text-slate-700 text-3xl"></i>
+                        `}
+                        <!-- Cheat Dot indicator (Premium) -->
+                        ${g.has_cheats ? `
+                            <div class="absolute top-2 left-2 flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-500/30" title="มีสูตรโกง">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>สูตร</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="p-2.5 flex-1 flex flex-col justify-between gap-1">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-100 truncate">${escapeHtml(g.display_name)}</div>
+                            <div class="text-[10px] text-slate-500 font-mono truncate">${escapeHtml(g.filename)}</div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/60 mt-1">
+                            <span class="font-mono bg-slate-800 px-1.5 py-0.5 rounded">${g.size_str}</span>
+                            <div class="flex items-center gap-1">
+                                <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="โหลด ROM" class="text-slate-400 hover:text-emerald-400 p-1">
+                                    <i class="fa-solid fa-download"></i>
+                                </a>
+                                ${g.has_save ? `
+                                <a href="/api/download_save?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลดเซฟ" class="text-amber-400 hover:text-amber-300 p-1">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                </a>` : ''}
+                                ${g.has_cheats ? `
+                                <button onclick="openCheatModal('${g.token}')" title="จัดการสูตรโกง" class="text-emerald-400 hover:text-emerald-300 p-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGameRow(g, idx) {
+            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            return `
+                <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-11 bg-slate-950 rounded flex items-center justify-center overflow-hidden shrink-0 border border-slate-800">
+                            ${g.has_cover ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain">` : `<i class="fa-solid fa-image text-slate-700 text-xs"></i>`}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-semibold text-slate-200 truncate flex items-center gap-2">
+                                <span>${escapeHtml(g.display_name)}</span>
+                                ${g.has_cheats ? `<span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">สูตร</span>` : ''}
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono truncate">${escapeHtml(g.filename)}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">${g.size_str}</span>
+                        <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download class="p-1.5 text-slate-400 hover:text-emerald-400"><i class="fa-solid fa-download"></i></a>
+                        ${g.has_save ? `<a href="/api/download_save?token=${encodeURIComponent(g.token)}" download class="p-1.5 text-amber-400 hover:text-amber-300"><i class="fa-solid fa-floppy-disk"></i></a>` : ''}
+                        ${g.has_cheats ? `<button onclick="openCheatModal('${g.token}')" class="p-1.5 text-emerald-400 hover:text-emerald-300"><i class="fa-solid fa-wand-magic-sparkles"></i></button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterGames() {
+            const q = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!q) return renderGames(state.games);
+            const filtered = state.games.filter(g => g.display_name.toLowerCase().includes(q) || g.filename.toLowerCase().includes(q));
+            renderGames(filtered);
+        }
+
+        function setViewMode(m) {
+            state.viewMode = m;
+            document.getElementById('viewGridBtn').className = m === 'grid' ? 'px-2.5 py-1 text-xs rounded bg-indigo-600 text-white' : 'px-2.5 py-1 text-xs rounded text-slate-400 hover:text-white';
+            document.getElementById('viewListBtn').className = m === 'list' ? 'px-2.5 py-1 text-xs rounded bg-indigo-600 text-white' : 'px-2.5 py-1 text-xs rounded text-slate-400 hover:text-white';
+            filterGames();
+        }
+
+        // ================= Save Manager (Premium) =================
+        async function loadSavesManager() {
+            const container = document.getElementById('savesListContainer');
+            container.innerHTML = `<div class="p-10 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl text-amber-500 mb-2"></i><div>กำลังดึงรายการไฟล์เซฟ...</div></div>`;
+
+            try {
+                const res = await fetch('/api/saves');
+                if (res.status === 403) {
+                    container.innerHTML = `<div class="p-8 text-center text-xs text-rose-400">ระบบนี้เฉพาะสมาชิก Premium</div>`;
+                    return;
+                }
+                const data = await res.json();
+                renderSavesList(data.saves || []);
+            } catch (err) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-rose-400">เกิดข้อผิดพลาด: ${err.message}</div>`;
+            }
+        }
+
+        function renderSavesList(saves) {
+            const container = document.getElementById('savesListContainer');
+            if (!saves || saves.length === 0) {
+                container.innerHTML = `<div class="p-10 text-center text-xs text-slate-500"><i class="fa-solid fa-box-open text-3xl mb-2"></i><div>ยังไม่พบไฟล์เซฟในเครื่องเล่น</div></div>`;
+                return;
+            }
+
+            container.innerHTML = saves.map(s => `
+                <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-semibold text-slate-200 truncate">${escapeHtml(s.game_title)}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(s.system_name)} • ${escapeHtml(s.filename)} (${s.size_str})</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] text-slate-500 font-mono hidden sm:inline">${s.modified}</span>
+                        <a href="/api/download_save?token=&path=" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg text-xs font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-download"></i>
+                            <span>โหลดเซฟ</span>
+                        </a>
+                        <button onclick="confirmDeleteSave('${s.system}', '${s.filename}')" class="p-1.5 text-slate-400 hover:text-rose-400">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function confirmDeleteSave(system, filename) {
+            if (!confirm(`คุณต้องการลบไฟล์เซฟ ${filename} ใช่หรือไม่? (ไม่สามารถกู้คืนได้)`)) return;
+            try {
+                const res = await fetch('/api/delete_save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ system, filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('ลบไฟล์เซฟเรียบร้อยแล้ว');
+                    loadSavesManager();
+                } else {
+                    showToast('ลบไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('ลบไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        // ================= Cheat Manager (Premium) =================
+        async function loadCheatsManager() {
+            const container = document.getElementById('cheatsGamesContainer');
+            const gamesWithCheats = state.games.filter(g => g.has_cheats);
+
+            if (gamesWithCheats.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-xs text-slate-500">
+                        <i class="fa-solid fa-wand-magic-sparkles text-3xl mb-2 text-slate-600"></i>
+                        <div>ยังไม่พบไฟล์สูตร (.cht) สำหรับเกมในระบบที่เลือก</div>
+                        <div class="text-[11px] text-slate-600 mt-1">คุณสามารถอัปโหลด Zip รวมสูตรโกงของ RetroArch ได้ที่ปุ่มด้านบน</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = gamesWithCheats.map(g => `
+                <div class="bg-slate-950/60 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-3 flex items-center justify-between gap-3 transition">
+                    <div class="min-w-0">
+                        <div class="text-xs font-semibold text-slate-200 truncate">${escapeHtml(g.display_name)}</div>
+                        <div class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>พร้อมใช้งานสูตรโกง</span>
+                        </div>
+                    </div>
+                    <button onclick="openCheatModal('${g.token}')" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg text-xs font-medium border border-emerald-500/30 transition">
+                        จัดการสูตร
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function openCheatModal(token) {
+            state.currentCheatToken = token;
+            document.getElementById('cheatModal').classList.remove('hidden');
+            const container = document.getElementById('cheatsList');
+            container.innerHTML = `<div class="py-8 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin text-xl text-emerald-500 mb-2"></i><div>กำลังอ่านไฟล์สูตร...</div></div>`;
+
+            try {
+                const res = await fetch(`/api/cheats?token=${encodeURIComponent(token)}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('cheatModalTitle').innerText = data.game || 'สูตรโกงเกม';
+                    document.getElementById('cheatModalFile').innerText = data.filename || '-';
+                    state.currentCheats = data.cheats || [];
+                    renderCheatsList(state.currentCheats);
+                } else {
+                    container.innerHTML = `<div class="py-6 text-center text-xs text-rose-400">${data.error}</div>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="py-6 text-center text-xs text-rose-400">โหลดไม่สำเร็จ: ${err.message}</div>`;
+            }
+        }
+
+        function closeCheatModal() {
+            document.getElementById('cheatModal').classList.add('hidden');
+            state.currentCheatToken = null;
+        }
+
+        function renderCheatsList(cheats) {
+            const container = document.getElementById('cheatsList');
+            if (!cheats || cheats.length === 0) {
+                container.innerHTML = `<div class="py-6 text-center text-xs text-slate-500">ไม่มีสูตรในไฟล์นี้</div>`;
+                return;
+            }
+
+            container.innerHTML = cheats.map((c, idx) => `
+                <label class="flex items-center gap-3 p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 cursor-pointer">
+                    <input type="checkbox" ${c.enable ? 'checked' : ''} onchange="state.currentCheats[${idx}].enable = this.checked" class="w-4 h-4 rounded text-emerald-600 focus:ring-0">
+                    <div class="min-w-0">
+                        <div class="text-xs font-medium text-slate-200 truncate">${escapeHtml(c.desc)}</div>
+                        <div class="text-[10px] text-slate-500 font-mono truncate">${escapeHtml(c.code)}</div>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        async function saveCheatToggles() {
+            if (!state.currentCheatToken) return;
+            try {
+                const res = await fetch('/api/save_cheats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: state.currentCheatToken, cheats: state.currentCheats })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('บันทึกสูตรเรียบร้อยแล้ว (อย่าลืมรีสตาร์ทเกม)');
+                    closeCheatModal();
+                } else {
+                    showToast('บันทึกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('บันทึกไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        async function handleUploadCheatZip(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showToast('กำลังติดตั้งชุดสูตรโกง...');
+                const res = await fetch('/api/upload_cheat_zip', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`ติดตั้งสูตรเรียบร้อยแล้ว (${data.count} ไฟล์)`);
+                    selectSystem(state.currentSystem);
+                } else {
+                    showToast('ติดตั้งไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('ติดตั้งไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        // ================= Multi-ROM & Folder Uploader =================
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+            resetUploadQueue();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            resetUploadQueue();
+        }
+
+        function resetUploadQueue() {
+            state.uploadQueue = [];
+            document.getElementById('uploadSelectZone').classList.remove('hidden');
+            document.getElementById('uploadReviewZone').classList.add('hidden');
+            document.getElementById('uploadProgressContainer').classList.add('hidden');
+        }
+
+        function initDragAndDrop() {
+            const dropArea = document.getElementById('dropArea');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+                dropArea.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                handleFilesSelected({ target: { files: dt.files } });
+            });
+        }
+
+        function handleFilesSelected(e) {
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
+
+            // Group files: single files vs PS1 files
+            files.forEach(f => {
+                state.uploadQueue.push({
+                    file: f,
+                    name: f.name,
+                    size: f.size,
+                    is_folder: false,
+                    system: detectSystemByExt(f.name)
+                });
+            });
+            showReviewZone();
+        }
+
+        function handleFolderSelected(e) {
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
+
+            // In webkitdirectory, files have relative path: "Folder Name/file.bin"
+            const folderName = files[0].webkitRelativePath ? files[0].webkitRelativePath.split('/')[0] : 'PS1_Game';
+            files.forEach(f => {
+                state.uploadQueue.push({
+                    file: f,
+                    name: f.name,
+                    size: f.size,
+                    is_folder: true,
+                    folder_name: folderName,
+                    system: 'psx'
+                });
+            });
+            showReviewZone();
+        }
+
+        function detectSystemByExt(name) {
+            const ext = name.slice(name.lastIndexOf('.')).toLowerCase();
+            const map = {
+                '.gba': 'gba', '.gb': 'gb', '.gbc': 'gbc', '.nes': 'nes',
+                '.sfc': 'sfc', '.smc': 'sfc', '.nds': 'nds', '.n64': 'n64',
+                '.iso': 'psx', '.cue': 'psx', '.chd': 'psx', '.pbp': 'psx',
+                '.md': 'megadrive', '.gen': 'megadrive'
+            };
+            return map[ext] || (state.currentSystem || 'gba');
+        }
+
+        function showReviewZone() {
+            document.getElementById('uploadSelectZone').classList.add('hidden');
+            document.getElementById('uploadReviewZone').classList.remove('hidden');
+            document.getElementById('queueCount').innerText = state.uploadQueue.length;
+
+            const reviewList = document.getElementById('reviewList');
+            reviewList.innerHTML = state.uploadQueue.map((item, idx) => `
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+                    <div class="min-w-0">
+                        <div class="font-semibold text-slate-200 truncate">${escapeHtml(item.name)}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">ระบบ: ${item.system.toUpperCase()} • ${(item.size / (1024*1024)).toFixed(1)} MB ${item.is_folder ? `(ในโฟลเดอร์ ${item.folder_name})` : ''}</div>
+                    </div>
+                    <button onclick="removeQueueItem(${idx})" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeQueueItem(idx) {
+            state.uploadQueue.splice(idx, 1);
+            if (state.uploadQueue.length === 0) resetUploadQueue();
+            else showReviewZone();
+        }
+
+        async function startBatchUpload() {
+            if (state.uploadQueue.length === 0) return;
+            const btn = document.getElementById('btnStartBatchUpload');
+            btn.disabled = true;
+            document.getElementById('uploadProgressContainer').classList.remove('hidden');
+
+            const total = state.uploadQueue.length;
+            let successCount = 0;
+
+            for (let i = 0; i < total; i++) {
+                const item = state.uploadQueue[i];
+                document.getElementById('uploadStatusText').innerText = `กำลังส่ง ${item.name} (${i+1}/${total})...`;
+                const percent = Math.round(((i) / total) * 100);
+                document.getElementById('uploadPercentText').innerText = `${percent}%`;
+                document.getElementById('uploadProgressBar').style.width = `${percent}%`;
+
+                const formData = new FormData();
+                formData.append('file', item.file);
+                formData.append('system', item.system);
+                if (item.is_folder) {
+                    formData.append('is_folder', 'true');
+                    formData.append('folder_name', item.folder_name);
+                }
+
+                try {
+                    const res = await fetch('/api/upload_rom', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.success) successCount++;
+                } catch (e) {
+                    console.error("Upload error:", e);
+                }
+            }
+
+            document.getElementById('uploadPercentText').innerText = `100%`;
+            document.getElementById('uploadProgressBar').style.width = `100%`;
+            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} จาก ${total} ไฟล์!`);
+            closeUploadModal();
+            selectSystem(state.currentSystem);
+            loadStatus();
+        }
+
+        // ================= Theme Switcher (Premium) =================
+        function setTheme(theme) {
+            document.body.className = `min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300 theme-${theme}`;
+            localStorage.setItem('retrogame_theme', theme);
+            showToast(`เปลี่ยนเป็นธีม ${theme} เรียบร้อยแล้ว`);
+        }
+
+        function loadSavedTheme() {
+            const saved = localStorage.getItem('retrogame_theme');
+            if (saved && saved !== 'default') {
+                document.body.className = `min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300 theme-${saved}`;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

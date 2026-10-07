@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArkOS WiFi ROM & Cover Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Prompt', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-darkborder sticky top-0 z-30 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-xl">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                        ArkOS WiFi Manager
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">v1.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">ระบบจัดการเกม ปก และพื้นที่เมมผ่าน Wi-Fi</p>
+                </div>
+            </div>
+
+            <!-- Quick Info & Action Buttons -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Connection Status Badge -->
+                <button onclick="openConnectModal()" id="statusBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" id="statusDot"></span>
+                    <span id="statusText">กำลังตรวจสอบ...</span>
+                </button>
+
+                <!-- Backup All Saves -->
+                <button onclick="backupAllSaves()" title="ดาวน์โหลดไฟล์เซฟเกมทั้งหมดเก็บไว้ในคอม (.zip)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                    <i class="fa-solid fa-floppy-disk text-amber-400"></i>
+                    <span>สำรองเซฟ (.zip)</span>
+                </button>
+
+                <!-- Restart EmulationStation -->
+                <button onclick="restartES()" title="รีเฟรชหน้าจอของเครื่อง ArkOS โดยไม่ต้องปิดเปิดเครื่องใหม่" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                    <i class="fa-solid fa-rotate text-emerald-400"></i>
+                    <span>รีสตาร์ท ES</span>
+                </button>
+
+                <!-- Refresh Data -->
+                <button onclick="refreshData()" title="ดึงข้อมูลใหม่" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                    <i class="fa-solid fa-arrows-rotate text-indigo-400"></i>
+                    <span>รีเฟรช</span>
+                </button>
+
+                <!-- Open Upload ROM Modal -->
+                <button onclick="openUploadModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/30 transition">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>+ ลงเกมใหม่</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl mx-auto w-full p-4 flex-1 flex flex-col gap-4">
+        
+        <!-- Storage & Overview Banner -->
+        <div id="storageBanner" class="bg-darkcard border border-darkborder rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 text-xl shrink-0">
+                    <i class="fa-solid fa-hard-drive"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">พื้นที่ในเมมโมรี่การ์ด (<span id="detectedRoot">/roms</span>)</span>
+                    </div>
+                    <div class="text-base font-semibold text-slate-100 flex items-center gap-2">
+                        <span id="diskUsageText">-- GB / -- GB</span>
+                        <span class="text-xs font-normal text-emerald-400" id="diskFreeText">(ว่าง -- GB)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="w-full md:w-96 flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>ความจุที่ใช้ไป</span>
+                    <span id="diskPercentText">0%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                    <div id="diskProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 text-xs text-slate-400 shrink-0">
+                <div class="text-center">
+                    <div class="text-lg font-bold text-indigo-400" id="totalSystemsCount">0</div>
+                    <div>ระบบเครื่องเล่น</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-bold text-emerald-400" id="totalGamesCount">0</div>
+                    <div>เกมทั้งหมดในระบบ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Working Area: Left Sidebar (Consoles) & Right Content (Games) -->
+        <div class="flex flex-col lg:flex-row gap-4 flex-1">
+            
+            <!-- Left Sidebar: Emulator / Console Selection -->
+            <aside class="w-full lg:w-72 bg-darkcard border border-darkborder rounded-2xl p-3 flex flex-col gap-3 shrink-0 max-h-[80vh] overflow-y-auto">
+                <div class="flex items-center justify-between px-2 pt-1">
+                    <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-indigo-400"></i>
+                        <span>เครื่องเกม (Systems)</span>
+                    </h2>
+                    <span class="text-xs text-slate-400" id="systemsBadge">0 เครื่อง</span>
+                </div>
+
+                <!-- System Search -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                    <input type="text" id="systemFilterInput" oninput="filterSystems()" placeholder="ค้นหาระบบ เช่น gba, ps1..." class="w-full bg-slate-900/80 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+
+                <!-- Systems List -->
+                <div id="systemsList" class="flex flex-col gap-1 pr-1">
+                    <div class="text-center py-8 text-xs text-slate-500">
+                        <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i>
+                        <div>กำลังโหลดระบบเกม...</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Content: Games of Selected System -->
+            <section class="flex-1 bg-darkcard border border-darkborder rounded-2xl p-4 flex flex-col gap-4">
+                
+                <!-- System Header & Game Filter -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-darkborder pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 text-lg">
+                            <i id="currentSysIcon" class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                <span id="currentSysName">เลือกเครื่องเกมเพื่อดูรายการ</span>
+                                <span id="currentSysGameCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-medium">0 เกม</span>
+                            </h2>
+                            <p class="text-xs text-slate-400">โฟลเดอร์: <span id="currentSysPath" class="font-mono text-indigo-300">--</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Search Games & Controls -->
+                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <div class="relative w-full sm:w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                            <input type="text" id="gameSearchInput" oninput="filterGames()" placeholder="ค้นหาชื่อเกม..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+
+                        <!-- Batch Scrape Button -->
+                        <button onclick="batchScrapeCurrentSystem()" id="btnBatchScrape" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 transition shrink-0" title="ค้นหาและลงปกให้เกมที่ยังไม่มีปกทั้งหมดในระบบนี้อัตโนมัติ">
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+                            <span class="hidden sm:inline">ดึงปกทุกเกม</span>
+                        </button>
+
+                        <!-- View mode toggle -->
+                        <div class="flex bg-slate-900 rounded-lg p-0.5 border border-slate-700 shrink-0">
+                            <button onclick="setViewMode('grid')" id="viewGridBtn" class="px-2.5 py-1 rounded text-xs text-slate-200 bg-slate-800 shadow" title="Grid View">
+                                <i class="fa-solid fa-border-all"></i>
+                            </button>
+                            <button onclick="setViewMode('list')" id="viewListBtn" class="px-2.5 py-1 rounded text-xs text-slate-400 hover:text-slate-200" title="List View">
+                                <i class="fa-solid fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drag and Drop Quick Upload Area -->
+                <div id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center transition bg-slate-900/40 cursor-pointer" onclick="document.getElementById('quickRomInput').click()">
+                    <input type="file" id="quickRomInput" multiple class="hidden" onchange="handleFileSelect(event)">
+                    <div class="flex items-center justify-center gap-3 text-xs text-slate-400">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl text-indigo-400"></i>
+                        <div>
+                            <span class="font-semibold text-slate-200">ลากไฟล์เกมมาวางที่นี่</span> หรือ <span class="text-indigo-400 underline">คลิกเพื่อเลือกไฟล์</span> ลงในระบบ <span id="dropTargetSys" class="font-bold text-indigo-300">นี้ทันที</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Progress Container (Hidden by default) -->
+                <div id="uploadProgressContainer" class="hidden bg-slate-900 border border-indigo-500/30 rounded-xl p-3 flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-medium text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-spinner fa-spin text-indigo-400"></i>
+                            <span id="uploadStatusText">กำลังอัปโหลดเกม...</span>
+                        </span>
+                        <span id="uploadPercentText" class="text-indigo-300 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="uploadProgressBar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Games Container -->
+                <div id="gamesContainer" class="flex-1 min-h-[300px]">
+                    <!-- Empty State / Placeholder -->
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
+                        <i class="fa-solid fa-gamepad text-4xl text-slate-700"></i>
+                        <div class="text-sm">กรุณาเลือกเครื่องเกมจากแถบด้านซ้ายเพื่อดูรายชื่อเกม</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Connect / Settings Modal -->
+    <div id="connectModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-darkcard border border-darkborder rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-darkborder pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                        <i class="fa-solid fa-wifi"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-100">เชื่อมต่อเครื่อง ArkOS ผ่าน Wi-Fi</h3>
+                </div>
+                <button onclick="closeConnectModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                <div class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>วิธีดู IP ของเครื่องเล่น ArkOS (R36S, RGB20S, RG351 ฯลฯ):</span>
+                </div>
+                <p>1. ต่อ Wi-Fi ที่เครื่องเล่น (ผ่าน USB Wi-Fi Dongle หรือ Wi-Fi ในตัว)</p>
+                <p>2. ในเมนูของเครื่อง เข้าไปที่ <span class="text-amber-300 font-mono">Options / Settings</span> -> <span class="text-amber-300 font-mono">Network Info</span> หรือ <span class="text-amber-300 font-mono">Wi-Fi</span></p>
+                <p>3. สังเกตตัวเลข IP เช่น <span class="text-emerald-400 font-mono">192.168.1.150</span> แล้วนำมากรอกด้านล่าง</p>
+            </div>
+
+            <form id="connectForm" onsubmit="handleConnect(event)" class="flex flex-col gap-3">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-medium text-slate-300">IP Address ของเครื่อง ArkOS <span class="text-rose-400">*</span></label>
+                        <button type="button" onclick="autoDiscoverIP()" id="btnDiscover" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium transition">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                            <span>สแกนหา IP อัตโนมัติ</span>
+                        </button>
+                    </div>
+                    <input type="text" id="inputHost" required placeholder="เช่น 192.168.1.150" value="{{ config.host }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono">
+                    <div id="discoverResultBox" class="hidden mt-2 p-2.5 rounded-lg bg-slate-900 border border-indigo-500/30 text-xs flex flex-col gap-1.5"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Username (ค่าเดิม: ark)</label>
+                        <input type="text" id="inputUsername" value="{{ config.username }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Password (ค่าเดิม: ark)</label>
+                        <input type="password" id="inputPassword" value="{{ config.password }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Port (SFTP)</label>
+                        <input type="number" id="inputPort" value="{{ config.port }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">โฟลเดอร์ ROMs</label>
+                        <select id="inputRoot" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                            <option value="auto">ตรวจจับอัตโนมัติ (/roms, /roms2)</option>
+                            <option value="/roms">SD 1 (/roms)</option>
+                            <option value="/roms2">SD 2 (/roms2 ช่องสอง)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="connectError" class="text-xs text-rose-400 hidden bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20"></div>
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" onclick="closeConnectModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white transition">ยกเลิก</button>
+                    <button type="submit" id="btnSubmitConnect" class="px-5 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-plug"></i>
+                        <span>เชื่อมต่อเดี๋ยวนี้</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload ROM Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-darkcard border border-darkborder rounded-2xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-darkborder pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-100">ลงเกมใหม่ (Upload ROM)</h3>
+                </div>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="uploadRomForm" onsubmit="handleUploadRom(event)" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">เลือกระบบเครื่องเล่นที่จะลง <span class="text-rose-400">*</span></label>
+                    <select id="uploadSystemSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                        <option value="auto">ตรวจจับอัตโนมัติตามนามสกุลไฟล์ (.gba, .sfc, .iso...)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">เลือกไฟล์เกมจากคอมพิวเตอร์ <span class="text-rose-400">*</span></label>
+                    <input type="file" id="uploadFileInput" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                    <p class="text-[11px] text-slate-400 mt-1">รองรับทั้งไฟล์ ROM เดี่ยว (.gba, .sfc, .nes, .chd, .iso, .nds) และ .zip</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อเกมที่ต้องการให้แสดงบนหน้าจอ (ปล่อยว่างไว้เพื่อใช้ชื่อไฟล์เดิม)</label>
+                    <input type="text" id="uploadDisplayNameInput" placeholder="เช่น Pokemon Emerald (ภาษาไทย หรือ อังกฤษ)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div id="uploadModalProgress" class="hidden flex flex-col gap-1.5 bg-slate-900 p-3 rounded-lg border border-slate-800">
+                    <div class="flex justify-between text-xs">
+                        <span id="modalUploadStatus" class="text-slate-300">กำลังอัปโหลด...</span>
+                        <span id="modalUploadPercent" class="text-indigo-400 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="modalUploadBar" class="h-full bg-indigo-500 transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white transition">ยกเลิก</button>
+                    <button type="submit" id="btnSubmitUpload" class="px-5 py-2 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>เริ่มอัปโหลดลงเมม</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Box Art / Cover Manager Modal -->
+    <div id="coverModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-darkcard border border-darkborder rounded-2xl w-full max-w-2xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between border-b border-darkborder pb-3 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-pink-600/20 text-pink-400 flex items-center justify-center">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-slate-100">จัดการรูปปกเกม</h3>
+                        <p class="text-xs text-slate-400" id="coverModalSubtitle">--</p>
+                    </div>
+                </div>
+                <button onclick="closeCoverModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Tab Headers -->
+            <div class="flex border-b border-darkborder gap-4 shrink-0 text-xs font-medium">
+                <button onclick="switchCoverTab('search')" id="tabBtnSearch" class="pb-2 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>🔍 ค้นหาปกออนไลน์อัตโนมัติ</span>
+                </button>
+                <button onclick="switchCoverTab('upload')" id="tabBtnUpload" class="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>📁 อัปโหลดรูปจากคอม</span>
+                </button>
+                <button onclick="switchCoverTab('url')" id="tabBtnUrl" class="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-link"></i>
+                    <span>🔗 วางลิงก์รูป (URL)</span>
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="flex-1 overflow-y-auto pr-1">
+                
+                <!-- Tab 1: Online Search -->
+                <div id="tabContentSearch" class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <input type="text" id="coverSearchQuery" placeholder="ชื่อเกมสำหรับค้นหา..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        <button onclick="performCoverSearch()" id="btnCoverSearch" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>ค้นหา</span>
+                        </button>
+                    </div>
+
+                    <div id="coverSearchResults" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 py-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Local File Upload -->
+                <div id="tabContentUpload" class="hidden flex flex-col gap-4 py-4">
+                    <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-8 text-center transition bg-slate-900/40">
+                        <input type="file" id="localCoverInput" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="previewLocalCover(event)">
+                        <label for="localCoverInput" class="cursor-pointer flex flex-col items-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400 text-xl">
+                                <i class="fa-solid fa-file-image"></i>
+                            </div>
+                            <span class="text-xs text-slate-300 font-medium">คลิกเพื่อเลือกไฟล์รูปภาพ (PNG / JPG / WEBP)</span>
+                            <span class="text-[11px] text-slate-500">ระบบจะทำการแปลงและเซฟลงโฟลเดอร์ images/ ให้อัตโนมัติ</span>
+                        </label>
+                    </div>
+
+                    <div id="localCoverPreviewContainer" class="hidden flex items-center gap-4 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                        <img id="localCoverPreviewImg" class="w-16 h-20 object-contain rounded bg-slate-950 border border-slate-800" src="" alt="preview">
+                        <div class="flex-1">
+                            <div class="text-xs font-semibold text-slate-200" id="localCoverFileName">image.png</div>
+                            <div class="text-[11px] text-slate-400">พร้อมอัปโหลด</div>
+                        </div>
+                        <button onclick="submitLocalCover()" id="btnSubmitLocalCover" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg shadow transition">
+                            บันทึกปกนี้
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Image URL -->
+                <div id="tabContentUrl" class="hidden flex flex-col gap-3 py-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">ลิงก์รูปภาพ (Image URL)</label>
+                        <div class="flex gap-2">
+                            <input type="url" id="coverDirectUrlInput" placeholder="https://example.com/boxart.png" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                            <button onclick="applyCoverFromUrl()" id="btnApplyCoverUrl" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition">
+                                นำไปใช้
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Game Modal -->
+    <div id="renameModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-darkcard border border-darkborder rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-darkborder pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-100">แก้ไขชื่อเกม & ข้อมูล</h3>
+                </div>
+                <button onclick="closeRenameModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="renameForm" onsubmit="handleRenameGame(event)" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">ชื่อไฟล์ ROM ปัจจุบันบนการ์ดเมม:</label>
+                    <div id="renameCurrentFilename" class="text-xs font-mono text-indigo-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800 break-all">--</div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อที่จะแสดงบนหน้าจอเครื่อง ArkOS <span class="text-rose-400">*</span></label>
+                    <input type="text" id="renameDisplayInput" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                    <p class="text-[11px] text-slate-400 mt-1">ตั้งเป็นภาษาไทยหรือภาษาอังกฤษได้ เครื่อง ArkOS จะแสดงชื่อนี้ในหน้าเลือกเกม</p>
+                </div>
+
+                <div class="flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                    <input type="checkbox" id="renamePhysicalCheck" onchange="toggleRenamePhysical()" class="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-0">
+                    <label for="renamePhysicalCheck" class="text-xs text-slate-300 cursor-pointer">
+                        <span class="font-medium text-slate-200">เปลี่ยนชื่อไฟล์ ROM บนการ์ดเมมด้วย</span>
+                        <div class="text-[11px] text-slate-500">ระบบจะเปลี่ยนชื่อไฟล์ .gba/.sfc และไฟล์เซฟ (.sav/.srm) ให้ตรงกันโดยอัตโนมัติ</div>
+                    </label>
+                </div>
+
+                <div id="physicalNameContainer" class="hidden">
+                    <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อไฟล์ใหม่บน SD Card</label>
+                    <input type="text" id="renamePhysicalInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" onclick="closeRenameModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white transition">ยกเลิก</button>
+                    <button type="submit" id="btnSubmitRename" class="px-5 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span>บันทึกชื่อเกม</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-24 opacity-0 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-md">
+        <i id="toastIcon" class="text-base"></i>
+        <div id="toastMsg" class="font-medium"></div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State variables
+        let appState = {
+            connected: false,
+            host: '',
+            systems: [],
+            currentSystem: null,
+            games: [],
+            viewMode: 'grid', // 'grid' | 'list'
+            activeGameForModal: null, // used in cover / rename modals
+        };
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkConnectionStatus();
+        });
+
+        // Toast notifications
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMsg');
+
+            text.innerText = msg;
+
+            if (type === 'success') {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-md bg-emerald-950/90 text-emerald-200 border-emerald-500/40 translate-y-0 opacity-100';
+                icon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-md bg-rose-950/90 text-rose-200 border-rose-500/40 translate-y-0 opacity-100';
+                icon.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+            } else {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-md bg-indigo-950/90 text-indigo-200 border-indigo-500/40 translate-y-0 opacity-100';
+                icon.className = 'fa-solid fa-circle-info text-indigo-400';
+            }
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 4000);
+        }
+
+        // Connection Handling
+        async function checkConnectionStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                updateConnectionUI(data);
+                if (data.connected) {
+                    await loadSystems();
+                } else {
+                    // Open connect modal automatically if never connected
+                    openConnectModal();
+                }
+            } catch (err) {
+                console.error("Status check error:", err);
+                updateConnectionUI({ connected: false });
+            }
+        }
+
+        function updateConnectionUI(data) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const statusBtn = document.getElementById('statusBtn');
+
+            if (data.connected) {
+                appState.connected = true;
+                appState.host = data.host;
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                statusText.innerText = `เชื่อมต่อแล้ว: ${data.host}`;
+                statusBtn.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20';
+
+                // Update Storage info
+                if (data.disk) {
+                    updateDiskUI(data.disk, data.root);
+                }
+            } else {
+                appState.connected = false;
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse';
+                statusText.innerText = 'ยังไม่เชื่อมต่อ ArkOS (คลิก)';
+                statusBtn.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all bg-rose-500/10 text-rose-300 border-rose-500/30 hover:bg-rose-500/20';
+            }
+        }
+
+        function updateDiskUI(disk, root) {
+            if (disk.total_gb) {
+                document.getElementById('diskUsageText').innerText = `${disk.used_gb} GB / ${disk.total_gb} GB`;
+                document.getElementById('diskFreeText').innerText = `(ว่าง ${disk.free_gb} GB)`;
+                document.getElementById('diskPercentText').innerText = `${disk.percent}%`;
+                document.getElementById('diskProgressBar').style.width = `${disk.percent}%`;
+            }
+            if (root) {
+                document.getElementById('detectedRoot').innerText = root;
+            }
+        }
+
+        function openConnectModal() {
+            document.getElementById('connectModal').classList.remove('hidden');
+            document.getElementById('connectError').classList.add('hidden');
+        }
+
+        function closeConnectModal() {
+            document.getElementById('connectModal').classList.add('hidden');
+        }
+
+        async function handleConnect(e) {
+            e.preventDefault();
+            const host = document.getElementById('inputHost').value.trim();
+            const port = document.getElementById('inputPort').value;
+            const username = document.getElementById('inputUsername').value.trim();
+            const password = document.getElementById('inputPassword').value;
+            const roms_root = document.getElementById('inputRoot').value;
+
+            const btn = document.getElementById('btnSubmitConnect');
+            const errBox = document.getElementById('connectError');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเชื่อมต่อ...';
+            errBox.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ host, port, username, password, roms_root })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeConnectModal();
+                    showToast(data.message, 'success');
+                    updateConnectionUI({ connected: true, host, disk: data.disk, root: data.root });
+                    await loadSystems();
+                } else {
+                    errBox.innerText = data.error || 'เชื่อมต่อไม่สำเร็จ';
+                    errBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errBox.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message;
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-plug"></i> <span>เชื่อมต่อเดี๋ยวนี้</span>';
+            }
+        }
+
+        // Systems Management
+        async function loadSystems() {
+            try {
+                const res = await fetch('/api/systems');
+                const data = await res.json();
+                if (data.systems) {
+                    appState.systems = data.systems;
+                    renderSystemsList(data.systems);
+                    populateUploadSystemOptions(data.systems);
+
+                    // Update overview counters
+                    document.getElementById('totalSystemsCount').innerText = data.systems.length;
+                    const totalGames = data.systems.reduce((acc, s) => acc + (s.game_count || 0), 0);
+                    document.getElementById('totalGamesCount').innerText = totalGames;
+
+                    // Auto select the first system with games if none selected
+                    if (!appState.currentSystem && data.systems.length > 0) {
+                        selectSystem(data.systems[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading systems:", err);
+            }
+        }
+
+        function renderSystemsList(systems) {
+            const listEl = document.getElementById('systemsList');
+            document.getElementById('systemsBadge').innerText = `${systems.length} เครื่อง`;
+
+            if (systems.length === 0) {
+                listEl.innerHTML = '<div class="text-center py-6 text-xs text-slate-500">ไม่พบโฟลเดอร์เกม</div>';
+                return;
+            }
+
+            listEl.innerHTML = systems.map(sys => {
+                const isSelected = appState.currentSystem === sys.id;
+                const activeClass = isSelected 
+                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-semibold' 
+                    : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/80 hover:text-slate-100';
+
+                return `
+                    <button onclick="selectSystem('${sys.id}')" class="w-full flex items-center justify-between p-2 rounded-xl border text-xs transition text-left ${activeClass}">
+                        <div class="flex items-center gap-2.5 truncate">
+                            <i class="fa-solid fa-${sys.icon || 'gamepad'} w-4 text-center text-slate-400"></i>
+                            <span class="truncate">${sys.name}</span>
+                        </div>
+                        <span class="text-[11px] px-1.5 py-0.5 rounded-full ${sys.game_count > 0 ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-500'} font-medium">
+                            ${sys.game_count}
+                        </span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function filterSystems() {
+            const q = document.getElementById('systemFilterInput').value.toLowerCase().trim();
+            const filtered = appState.systems.filter(s => 
+                s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+            );
+            renderSystemsList(filtered);
+        }
+
+        function populateUploadSystemOptions(systems) {
+            const select = document.getElementById('uploadSystemSelect');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="auto">ตรวจจับอัตโนมัติตามนามสกุลไฟล์ (.gba, .sfc, .iso...)</option>';
+            systems.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.name} (${s.id})`;
+                select.appendChild(opt);
+            });
+            if (currentVal) select.value = currentVal;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Select and Load Games of a System
+        let activeLoadSystemId = 0;
+        async function selectSystem(systemId) {
+            const thisReqId = ++activeLoadSystemId;
+            appState.currentSystem = systemId;
+            const sys = appState.systems.find(s => s.id === systemId);
+
+            // Re-render system buttons to update active style
+            renderSystemsList(appState.systems);
+
+            if (sys) {
+                document.getElementById('currentSysName').innerText = sys.name;
+                document.getElementById('currentSysPath').innerText = sys.path;
+                document.getElementById('currentSysIcon').className = `fa-solid fa-${sys.icon || 'gamepad'}`;
+                document.getElementById('dropTargetSys').innerText = sys.name;
+            }
+
+            // Load games
+            const container = document.getElementById('gamesContainer');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-500"></i>
+                    <div class="text-xs">กำลังดึงรายชื่อเกมและรูปปกจากเครื่อง ArkOS...</div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/api/games?system=${encodeURIComponent(systemId)}`);
+                const data = await res.json();
+                if (thisReqId !== activeLoadSystemId) return; // Stale request, ignore!
+
+                if (data.games) {
+                    appState.games = data.games;
+                    document.getElementById('currentSysGameCount').innerText = `${data.games.length} เกม`;
+                    renderGames(data.games);
+                } else if (data.error) {
+                    container.innerHTML = `<div class="text-center py-12 text-rose-400 text-xs">${escapeHtml(data.error)}</div>`;
+                }
+            } catch (err) {
+                if (thisReqId === activeLoadSystemId) {
+                    container.innerHTML = `<div class="text-center py-12 text-rose-400 text-xs">เกิดข้อผิดพลาดในการโหลดเกม: ${escapeHtml(err.message)}</div>`;
+                }
+            }
+        }
+
+        function renderGames(games) {
+            const container = document.getElementById('gamesContainer');
+            
+            if (!games || games.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
+                        <i class="fa-solid fa-box-open text-4xl text-slate-700"></i>
+                        <div class="text-sm">ยังไม่มีเกมในระบบนี้</div>
+                        <button onclick="openUploadModal('${appState.currentSystem}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition">
+                            + ลงเกมในระบบนี้
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (appState.viewMode === 'grid') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                        ${games.map((g, idx) => renderGameCard(g, idx)).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="bg-slate-900/80 rounded-xl border border-slate-800 overflow-hidden divide-y divide-slate-800">
+                        ${games.map((g, idx) => renderGameRow(g, idx)).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function renderGameCard(g, idx) {
+            const safeDisplayName = escapeHtml(g.display_name);
+            const safeFilename = escapeHtml(g.filename);
+            const coverUrl = g.has_cover 
+                ? `/api/image?system=${encodeURIComponent(g.system)}&path=${encodeURIComponent(g.cover_path)}`
+                : '';
+
+            return `
+                <div class="group bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:shadow-lg hover:shadow-indigo-500/10">
+                    <!-- Box Art Image Container -->
+                    <div class="relative w-full aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/80">
+                        ${g.has_cover ? `
+                            <img src="${coverUrl}" alt="${safeDisplayName}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300">
+                            <div class="hidden flex-col items-center justify-center text-slate-700 gap-1.5 p-2 text-center w-full h-full">
+                                <i class="fa-solid fa-image text-3xl"></i>
+                                <span class="text-[10px] text-slate-600">ไม่มีรูปปก</span>
+                            </div>
+                        ` : `
+                            <div class="flex flex-col items-center justify-center text-slate-700 gap-1.5 p-2 text-center">
+                                <i class="fa-solid fa-image text-3xl"></i>
+                                <span class="text-[10px] text-slate-600">ไม่มีรูปปก</span>
+                            </div>
+                        `}
+                        <!-- Hover Overlay Quick Action -->
+                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                            <button onclick="openCoverModal(${idx})" title="เปลี่ยนรูปปก" class="w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center shadow transition transform hover:scale-110">
+                                <i class="fa-solid fa-image text-xs"></i>
+                            </button>
+                            <button onclick="openRenameModal(${idx})" title="แก้ไขชื่อเกม" class="w-8 h-8 rounded-full bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center shadow transition transform hover:scale-110">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button onclick="confirmDeleteGame(${idx})" title="ลบเกม" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow transition transform hover:scale-110">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Meta details -->
+                    <div class="p-2.5 flex-1 flex flex-col justify-between gap-1">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-100 line-clamp-2 leading-snug group-hover:text-indigo-300 transition" title="${safeDisplayName}">
+                                ${safeDisplayName}
+                            </div>
+                            <div class="text-[10px] text-slate-500 truncate font-mono mt-0.5" title="${safeFilename}">
+                                ${safeFilename}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 mt-1">
+                            <div class="flex items-center gap-1 font-mono">
+                                <span class="px-1.5 py-0.2 rounded bg-slate-800">${g.size_str}</span>
+                                ${g.has_save ? `<span class="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-sans" title="พบไฟล์เซฟ">💾 เซฟ</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-0.5">
+                                <a href="/api/download_rom?system=${encodeURIComponent(g.system)}&filename=${encodeURIComponent(g.filename)}" download title="ดาวน์โหลด ROM กลับคอม" class="text-slate-400 hover:text-emerald-400 p-1">
+                                    <i class="fa-solid fa-download"></i>
+                                </a>
+                                ${g.has_save ? `
+                                <a href="/api/download_save?system=${encodeURIComponent(g.system)}&filename=${encodeURIComponent(g.save_filename)}" download title="ดาวน์โหลดไฟล์เซฟ (${escapeHtml(g.save_filename)})" class="text-slate-400 hover:text-amber-400 p-1">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                </a>` : ''}
+                                <button onclick="openCoverModal(${idx})" class="text-slate-400 hover:text-pink-400 p-1" title="เปลี่ยนปก">
+                                    <i class="fa-solid fa-image"></i>
+                                </button>
+                                <button onclick="openRenameModal(${idx})" class="text-slate-400 hover:text-amber-400 p-1" title="เปลี่ยนชื่อ">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="confirmDeleteGame(${idx})" class="text-slate-400 hover:text-rose-400 p-1" title="ลบ">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGameRow(g, idx) {
+            const safeDisplayName = escapeHtml(g.display_name);
+            const safeFilename = escapeHtml(g.filename);
+            const coverUrl = g.has_cover 
+                ? `/api/image?system=${encodeURIComponent(g.system)}&path=${encodeURIComponent(g.cover_path)}`
+                : '';
+
+            return `
+                <div class="p-2.5 flex items-center justify-between hover:bg-slate-800/50 transition gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-12 bg-slate-950 rounded border border-slate-800 shrink-0 flex items-center justify-center overflow-hidden">
+                            ${g.has_cover ? `
+                                <img src="${coverUrl}" class="w-full h-full object-contain" alt="cover" onerror="this.style.display='none';">
+                            ` : `
+                                <i class="fa-solid fa-image text-slate-700 text-xs"></i>
+                            `}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-semibold text-slate-200 truncate">${safeDisplayName}</div>
+                            <div class="text-[11px] text-slate-500 font-mono truncate">${safeFilename}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex items-center gap-1.5 font-mono text-xs text-slate-400">
+                            <span>${g.size_str}</span>
+                            ${g.has_save ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-sans">💾 มีเซฟ</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/api/download_rom?system=${encodeURIComponent(g.system)}&filename=${encodeURIComponent(g.filename)}" download title="ดาวน์โหลด ROM กลับคอม" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-300 text-xs transition flex items-center gap-1">
+                                <i class="fa-solid fa-download text-emerald-400"></i>
+                            </a>
+                            ${g.has_save ? `
+                            <a href="/api/download_save?system=${encodeURIComponent(g.system)}&filename=${encodeURIComponent(g.save_filename)}" download title="ดาวน์โหลดไฟล์เซฟ (${escapeHtml(g.save_filename)})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-300 text-xs transition flex items-center gap-1">
+                                <i class="fa-solid fa-floppy-disk text-amber-400"></i>
+                            </a>` : ''}
+                            <button onclick="openCoverModal(${idx})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition flex items-center gap-1">
+                                <i class="fa-solid fa-image text-pink-400"></i>
+                                <span class="hidden sm:inline">ปก</span>
+                            </button>
+                            <button onclick="openRenameModal(${idx})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition flex items-center gap-1">
+                                <i class="fa-solid fa-pen text-amber-400"></i>
+                                <span class="hidden sm:inline">แก้ชื่อ</span>
+                            </button>
+                            <button onclick="confirmDeleteGame(${idx})" class="px-2 py-1 rounded bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 text-xs transition">
+                                <i class="fa-solid fa-trash text-rose-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setViewMode(mode) {
+            appState.viewMode = mode;
+            const gridBtn = document.getElementById('viewGridBtn');
+            const listBtn = document.getElementById('viewListBtn');
+            if (mode === 'grid') {
+                gridBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-200 bg-slate-800 shadow';
+                listBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-400 hover:text-slate-200';
+            } else {
+                listBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-200 bg-slate-800 shadow';
+                gridBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-400 hover:text-slate-200';
+            }
+            filterGames();
+        }
+
+        function filterGames() {
+            const q = document.getElementById('gameSearchInput').value.toLowerCase().trim();
+            const filtered = appState.games.filter(g => 
+                g.display_name.toLowerCase().includes(q) || g.filename.toLowerCase().includes(q)
+            );
+            renderGames(filtered);
+        }
+
+        // Drag and Drop & ROM Upload
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.add('border-indigo-500', 'bg-indigo-500/10');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('border-indigo-500', 'bg-indigo-500/10');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('border-indigo-500', 'bg-indigo-500/10');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                uploadFilesDirect(e.dataTransfer.files);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                uploadFilesDirect(e.target.files);
+            }
+        }
+
+        async function uploadFilesDirect(fileList) {
+            if (!appState.currentSystem) {
+                showToast("กรุณาเลือกเครื่องเกมก่อนอัปโหลด", "error");
+                return;
+            }
+
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const statusText = document.getElementById('uploadStatusText');
+            const percentText = document.getElementById('uploadPercentText');
+            const progressBar = document.getElementById('uploadProgressBar');
+
+            progressContainer.classList.remove('hidden');
+
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                statusText.innerText = `กำลังอัปโหลด (${i + 1}/${fileList.length}): ${file.name}`;
+
+                await new Promise((resolve) => {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('system', appState.currentSystem);
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/upload_rom');
+
+                    xhr.upload.onprogress = (ev) => {
+                        if (ev.lengthComputable) {
+                            const pct = Math.round((ev.loaded / ev.total) * 100);
+                            percentText.innerText = `${pct}%`;
+                            progressBar.style.width = `${pct}%`;
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            showToast(`อัปโหลด ${file.name} สำเร็จ!`, 'success');
+                        } else {
+                            showToast(`อัปโหลด ${file.name} ล้มเหลว`, 'error');
+                        }
+                        resolve();
+                    };
+
+                    xhr.onerror = () => {
+                        showToast(`การเชื่อมต่อขัดข้องระหว่างอัปโหลด`, 'error');
+                        resolve();
+                    };
+
+                    xhr.send(formData);
+                });
+            }
+
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+            percentText.innerText = '0%';
+
+            // Refresh current system games
+            await selectSystem(appState.currentSystem);
+            // Refresh disk stats
+            const statRes = await fetch('/api/status');
+            const statData = await statRes.json();
+            if (statData.disk) updateDiskUI(statData.disk, statData.root);
+        }
+
+        // Upload Modal
+        function openUploadModal(systemId = null) {
+            if (systemId) {
+                document.getElementById('uploadSystemSelect').value = systemId;
+            } else if (appState.currentSystem) {
+                document.getElementById('uploadSystemSelect').value = appState.currentSystem;
+            }
+            document.getElementById('uploadModal').classList.remove('hidden');
+            document.getElementById('uploadModalProgress').classList.add('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('uploadRomForm').reset();
+        }
+
+        function handleUploadRom(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('uploadFileInput');
+            if (!fileInput.files.length) return;
+
+            const file = fileInput.files[0];
+            const system = document.getElementById('uploadSystemSelect').value;
+            const displayName = document.getElementById('uploadDisplayNameInput').value.trim();
+
+            const progressBox = document.getElementById('uploadModalProgress');
+            const modalStatus = document.getElementById('modalUploadStatus');
+            const modalPercent = document.getElementById('modalUploadPercent');
+            const modalBar = document.getElementById('modalUploadBar');
+            const btn = document.getElementById('btnSubmitUpload');
+
+            btn.disabled = true;
+            progressBox.classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('system', system);
+            formData.append('display_name', displayName);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/upload_rom');
+
+            xhr.upload.onprogress = (ev) => {
+                if (ev.lengthComputable) {
+                    const pct = Math.round((ev.loaded / ev.total) * 100);
+                    modalPercent.innerText = `${pct}%`;
+                    modalBar.style.width = `${pct}%`;
+                    modalStatus.innerText = `กำลังอัปโหลด... ${pct}%`;
+                }
+            };
+
+            xhr.onload = async () => {
+                btn.disabled = false;
+                if (xhr.status === 200) {
+                    closeUploadModal();
+                    showToast(`ลงเกม ${file.name} เรียบร้อยแล้ว!`, 'success');
+                    if (appState.currentSystem) {
+                        await selectSystem(appState.currentSystem);
+                    }
+                    loadSystems();
+                } else {
+                    showToast('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
+                }
+            };
+
+            xhr.onerror = () => {
+                btn.disabled = false;
+                showToast('การเชื่อมต่อล้มเหลว', 'error');
+            };
+
+            xhr.send(formData);
+        }
+
+        // Cover Management Modal
+        function openCoverModal(target) {
+            let game = null;
+            if (typeof target === 'number') {
+                game = appState.games[target];
+            } else {
+                const filename = decodeURIComponent(target);
+                game = appState.games.find(g => g.filename === filename);
+            }
+            if (!game) return;
+
+            appState.activeGameForModal = game;
+            document.getElementById('coverModalSubtitle').innerText = `${game.display_name} (${game.filename})`;
+            document.getElementById('coverSearchQuery').value = game.display_name;
+            document.getElementById('coverModal').classList.remove('hidden');
+
+            switchCoverTab('search');
+            performCoverSearch();
+        }
+
+        function closeCoverModal() {
+            document.getElementById('coverModal').classList.add('hidden');
+            document.getElementById('coverSearchResults').innerHTML = '';
+            document.getElementById('localCoverPreviewContainer').classList.add('hidden');
+        }
+
+        function switchCoverTab(tab) {
+            const searchTab = document.getElementById('tabContentSearch');
+            const uploadTab = document.getElementById('tabContentUpload');
+            const urlTab = document.getElementById('tabContentUrl');
+
+            const tabBtnSearch = document.getElementById('tabBtnSearch');
+            const tabBtnUpload = document.getElementById('tabBtnUpload');
+            const tabBtnUrl = document.getElementById('tabBtnUrl');
+
+            [searchTab, uploadTab, urlTab].forEach(el => el.classList.add('hidden'));
+            [tabBtnSearch, tabBtnUpload, tabBtnUrl].forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'text-indigo-400');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            if (tab === 'search') {
+                searchTab.classList.remove('hidden');
+                tabBtnSearch.classList.add('border-indigo-500', 'text-indigo-400');
+                tabBtnSearch.classList.remove('border-transparent', 'text-slate-400');
+            } else if (tab === 'upload') {
+                uploadTab.classList.remove('hidden');
+                tabBtnUpload.classList.add('border-indigo-500', 'text-indigo-400');
+                tabBtnUpload.classList.remove('border-transparent', 'text-slate-400');
+            } else if (tab === 'url') {
+                urlTab.classList.remove('hidden');
+                tabBtnUrl.classList.add('border-indigo-500', 'text-indigo-400');
+                tabBtnUrl.classList.remove('border-transparent', 'text-slate-400');
+            }
+        }
+
+        async function performCoverSearch() {
+            const query = document.getElementById('coverSearchQuery').value.trim();
+            const resultsBox = document.getElementById('coverSearchResults');
+            const btn = document.getElementById('btnCoverSearch');
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            resultsBox.innerHTML = `
+                <div class="col-span-full py-8 text-center text-xs text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500 mb-2"></i>
+                    <div>กำลังค้นหาปกเกมออนไลน์...</div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/search_covers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        query: query,
+                        system: appState.activeGameForModal.system
+                    })
+                });
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    resultsBox.innerHTML = data.results.map((r, idx) => `
+                        <div class="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden p-1 flex flex-col gap-1 transition">
+                            <div class="aspect-[3/4] bg-slate-950 rounded flex items-center justify-center overflow-hidden">
+                                <img src="${r.thumbnail}" alt="${escapeHtml(r.title)}" loading="lazy" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-[10px] text-slate-400 truncate" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</div>
+                            <button onclick="applyOnlineCover('${encodeURIComponent(r.image_url)}')" class="w-full py-1 text-[11px] font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded transition mt-auto flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-check"></i>
+                                <span>ใช้รูปนี้</span>
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    resultsBox.innerHTML = `
+                        <div class="col-span-full py-8 text-center text-xs text-slate-500">
+                            ไม่พบรูปปก ลองค้นหาด้วยชื่อภาษาอังกฤษแบบสั้นลง เช่น "Mario" หรือ "Pokemon"
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultsBox.innerHTML = `<div class="col-span-full py-8 text-center text-rose-400 text-xs">ค้นหาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> ค้นหา';
+            }
+        }
+
+        async function applyOnlineCover(encodedUrl) {
+            const imgUrl = decodeURIComponent(encodedUrl);
+            const game = appState.activeGameForModal;
+            if (!game) return;
+
+            showToast("กำลังดาวน์โหลดและติดตั้งรูปลงเครื่อง ArkOS...", "info");
+
+            try {
+                const res = await fetch('/api/apply_online_cover', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_url: imgUrl,
+                        system: game.system,
+                        rom_filename: game.filename
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeCoverModal();
+                    showToast("ลงรูปปกเรียบร้อยแล้ว!", "success");
+                    await selectSystem(game.system);
+                } else {
+                    showToast(data.error || "ลงรูปปกไม่สำเร็จ", "error");
+                }
+            } catch (err) {
+                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            }
+        }
+
+        function previewLocalCover(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const container = document.getElementById('localCoverPreviewContainer');
+            const previewImg = document.getElementById('localCoverPreviewImg');
+            const fileName = document.getElementById('localCoverFileName');
+
+            previewImg.src = URL.createObjectURL(file);
+            fileName.innerText = file.name;
+            container.classList.remove('hidden');
+        }
+
+        async function submitLocalCover() {
+            const input = document.getElementById('localCoverInput');
+            if (!input.files.length || !appState.activeGameForModal) return;
+
+            const file = input.files[0];
+            const game = appState.activeGameForModal;
+            const btn = document.getElementById('btnSubmitLocalCover');
+
+            btn.disabled = true;
+            btn.innerText = 'กำลังส่งรูป...';
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('system', game.system);
+            formData.append('rom_filename', game.filename);
+
+            try {
+                const res = await fetch('/api/upload_cover', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeCoverModal();
+                    showToast("ลงรูปปกเรียบร้อยแล้ว!", "success");
+                    await selectSystem(game.system);
+                } else {
+                    showToast(data.error || "อัปโหลดไม่สำเร็จ", "error");
+                }
+            } catch (err) {
+                showToast("ข้อผิดพลาด: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'บันทึกปกนี้';
+            }
+        }
+
+        async function applyCoverFromUrl() {
+            const urlInput = document.getElementById('coverDirectUrlInput');
+            const url = urlInput.value.trim();
+            if (!url) return;
+            await applyOnlineCover(encodeURIComponent(url));
+        }
+
+        // Rename Game Modal
+        function openRenameModal(target) {
+            let game = null;
+            if (typeof target === 'number') {
+                game = appState.games[target];
+            } else {
+                const filename = decodeURIComponent(target);
+                game = appState.games.find(g => g.filename === filename);
+            }
+            if (!game) return;
+
+            appState.activeGameForModal = game;
+            document.getElementById('renameCurrentFilename').innerText = game.filename;
+            document.getElementById('renameDisplayInput').value = game.display_name;
+            document.getElementById('renamePhysicalCheck').checked = false;
+            document.getElementById('physicalNameContainer').classList.add('hidden');
+            document.getElementById('renamePhysicalInput').value = game.filename;
+            document.getElementById('renameModal').classList.remove('hidden');
+        }
+
+        function closeRenameModal() {
+            document.getElementById('renameModal').classList.add('hidden');
+        }
+
+        function toggleRenamePhysical() {
+            const checked = document.getElementById('renamePhysicalCheck').checked;
+            const container = document.getElementById('physicalNameContainer');
+            if (checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        async function handleRenameGame(e) {
+            e.preventDefault();
+            const game = appState.activeGameForModal;
+            if (!game) return;
+
+            const newDisplayName = document.getElementById('renameDisplayInput').value.trim();
+            const renamePhysical = document.getElementById('renamePhysicalCheck').checked;
+            const newFilename = document.getElementById('renamePhysicalInput').value.trim();
+            const btn = document.getElementById('btnSubmitRename');
+
+            btn.disabled = true;
+            btn.innerText = 'กำลังบันทึก...';
+
+            try {
+                const res = await fetch('/api/rename_game', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        system: game.system,
+                        old_filename: game.filename,
+                        new_display_name: newDisplayName,
+                        rename_rom_file: renamePhysical,
+                        new_filename: newFilename
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeRenameModal();
+                    showToast("เปลี่ยนชื่อเกมเรียบร้อยแล้ว!", "success");
+                    await selectSystem(game.system);
+                } else {
+                    showToast(data.error || "เปลี่ยนชื่อไม่สำเร็จ", "error");
+                }
+            } catch (err) {
+                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'บันทึกชื่อเกม';
+            }
+        }
+
+        // Delete Game
+        async function confirmDeleteGame(target) {
+            let game = null;
+            if (typeof target === 'number') {
+                game = appState.games[target];
+            } else {
+                const filename = decodeURIComponent(target);
+                game = appState.games.find(g => g.filename === filename);
+            }
+            if (!game) return;
+
+            if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบเกม "${game.display_name}" (${game.filename}) ออกจากการ์ดความจำ?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/delete_game', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        system: game.system,
+                        filename: game.filename,
+                        delete_media: true
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                    await selectSystem(game.system);
+                    loadSystems();
+                } else {
+                    showToast(data.error || "ลบเกมไม่สำเร็จ", "error");
+                }
+            } catch (err) {
+                showToast("ข้อผิดพลาด: " + err.message, "error");
+            }
+        }
+
+        // Restart EmulationStation
+        async function restartES() {
+            if (!appState.connected) {
+                showToast("ยังไม่ได้เชื่อมต่อกับเครื่อง ArkOS", "error");
+                return;
+            }
+
+            if (!confirm("ต้องการรีสตาร์ท EmulationStation หรือไม่? หน้าจอเครื่องเล่นจะดับและเปิดใหม่เพื่ออัปเดตรายชื่อเกมและรูปปกทันที")) {
+                return;
+            }
+
+            showToast("กำลังส่งคำสั่งรีสตาร์ทไปยังเครื่อง...", "info");
+            try {
+                const res = await fetch('/api/restart_es', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                } else {
+                    showToast(data.error || "ไม่สามารถรีสตาร์ทได้", "error");
+                }
+            } catch (err) {
+                showToast("ข้อผิดพลาด: " + err.message, "error");
+            }
+        }
+
+        // Auto Discover ArkOS on Local Network
+        async function autoDiscoverIP() {
+            const btn = document.getElementById('btnDiscover');
+            const resBox = document.getElementById('discoverResultBox');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสแกน...';
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = '<div class="text-slate-400 text-[11px]"><i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังสแกนหาเครื่อง ArkOS ในวงเครือข่าย...</div>';
+
+            try {
+                const res = await fetch('/api/discover');
+                const data = await res.json();
+                if (data.found_ips && data.found_ips.length > 0) {
+                    resBox.innerHTML = `
+                        <div class="text-emerald-400 font-semibold text-[11px] mb-1">
+                            <i class="fa-solid fa-circle-check mr-1"></i> พบอุปกรณ์ในวงเครือข่าย ${data.found_ips.length} เครื่อง:
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${data.found_ips.map(ip => `
+                                <button type="button" onclick="selectDiscoveredIP('${ip}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-[11px] transition shadow flex items-center gap-1">
+                                    <i class="fa-solid fa-plug text-[10px]"></i>
+                                    <span>${ip} (คลิกเพื่อเลือก)</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    resBox.innerHTML = `
+                        <div class="text-amber-400 text-[11px]">
+                            <i class="fa-solid fa-circle-info mr-1"></i> ไม่พบเครื่องเปิด Port SSH ในวง (${data.subnet_prefix}*)
+                        </div>
+                        <div class="text-slate-500 text-[10px]">
+                            ตรวจสอบว่าเครื่อง ArkOS เปิดเครื่องและต่อ Wi-Fi เรียบร้อยแล้ว หรือกรอก IP ด้วยตนเอง
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resBox.innerHTML = `<div class="text-rose-400 text-[11px]">เกิดข้อผิดพลาดในการสแกน: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> สแกนหา IP อัตโนมัติ';
+            }
+        }
+
+        function selectDiscoveredIP(ip) {
+            document.getElementById('inputHost').value = ip;
+            showToast(`เลือก IP: ${ip} แล้ว กดปุ่ม "เชื่อมต่อเดี๋ยวนี้" ได้เลย`, 'info');
+        }
+
+        // Backup All Saves as ZIP
+        function backupAllSaves() {
+            if (!appState.connected) {
+                showToast("กรุณาเชื่อมต่อกับเครื่อง ArkOS ก่อน", "error");
+                return;
+            }
+            showToast("กำลังรวบรวมไฟล์เซฟทั้งหมดและดาวน์โหลดเป็น .ZIP...", "info");
+            window.location.href = '/api/backup_all_saves';
+        }
+
+        // Batch Scrape All Missing Covers in Current System
+        async function batchScrapeCurrentSystem() {
+            if (!appState.connected || !appState.currentSystem) {
+                showToast("กรุณาเลือกเครื่องเกมก่อน", "error");
+                return;
+            }
+
+            const sys = appState.systems.find(s => s.id === appState.currentSystem);
+            const sysName = sys ? sys.name : appState.currentSystem;
+
+            if (!confirm(`ต้องการค้นหาและลงรูปปกให้กับทุกเกมใน "${sysName}" ที่ยังไม่มีปกโดยอัตโนมัติหรือไม่?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnBatchScrape');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> <span>กำลังดึงปก...</span>';
+
+            showToast("ระบบกำลังดึงปกจากฐานข้อมูล Libretro อัตโนมัติ กรุณารอสักครู่...", "info");
+
+            try {
+                const res = await fetch('/api/batch_scrape', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ system: appState.currentSystem })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`ดึงและติดตั้งปกสำเร็จ ${data.updated} / ${data.total_uncovered} เกม!`, "success");
+                    await selectSystem(appState.currentSystem);
+                } else {
+                    showToast(data.error || "เกิดข้อผิดพลาดในการดึงปก", "error");
+                }
+            } catch (err) {
+                showToast("ข้อผิดพลาด: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> <span class="hidden sm:inline">ดึงปกทุกเกม</span>';
+            }
+        }
+
+        function refreshData() {
+            if (appState.currentSystem) {
+                selectSystem(appState.currentSystem);
+            }
+            loadSystems();
+            checkConnectionStatus();
+            showToast("รีเฟรชข้อมูลแล้ว", "info");
+        }
+    </script>
+</body>
+</html>

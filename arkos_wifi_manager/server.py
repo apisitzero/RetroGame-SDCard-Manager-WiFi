@@ -1,0 +1,533 @@
+# -*- coding: utf-8 -*-
+"""
+RetroGame & SD Card Manager Version WiFi v1.1 - On-Device HTTP Server
+Created for: เพจเล่าเรื่องเกม (Lao Reuang Game) & BallModThaiGame
+Author: AntiGravity
+Zero-dependency Python 3 HTTP Server with Token Dictionary, RAM Caching & License System
+"""
+
+import os
+import sys
+
+# Ensure UTF-8 console output
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+import json
+import socket
+import signal
+import shutil
+import urllib.parse
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+import mimetypes
+import secrets
+
+# Add current directory to path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+from tui import print_tui
+from game_manager import ArkOSGameManager
+from license_manager import LicenseManager
+import scraper
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+def get_local_ip():
+    """Detect LAN IP address of the R36S console."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('1.1.1.1', 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        try:
+            import subprocess
+            out = subprocess.check_output(['hostname', '-I']).decode().strip()
+            ip = out.split()[0] if out else '127.0.0.1'
+        except Exception:
+            ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+def parse_multipart(body_bytes, boundary):
+    """Zero-dependency RFC 7578 multipart/form-data parser."""
+    parts = {}
+    boundary_bytes = b"--" + boundary.encode()
+    raw_parts = body_bytes.split(boundary_bytes)
+    for part in raw_parts:
+        if not part or part == b"--\r\n" or part == b"--" or part == b"--\r\n\r\n":
+            continue
+        if b"\r\n\r\n" in part:
+            header_data, content = part.split(b"\r\n\r\n", 1)
+            if content.endswith(b"\r\n"):
+                content = content[:-2]
+            headers = header_data.decode(errors="ignore")
+            name = None
+            filename = None
+            for line in headers.split("\r\n"):
+                if "content-disposition" in line.lower():
+                    for param in line.split(";"):
+                        param = param.strip()
+                        if param.lower().startswith("name="):
+                            name = param.split("=", 1)[1].strip('"\'')
+                        elif param.lower().startswith("filename="):
+                            filename = param.split("=", 1)[1].strip('"\'')
+            if name:
+                parts[name] = {"filename": filename, "data": content}
+    return parts
+
+class ArkOSRequestHandler(BaseHTTPRequestHandler):
+    server_version = "RetroGame-SDCard-Manager-WiFi/1.1"
+
+    def log_message(self, format, *args):
+        # Keep R36S terminal TUI clean
+        pass
+
+    def send_json(self, data, status_code=200):
+        body = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+        is_premium = self.server.license_mgr.is_premium()
+
+        # 1. Root & Static Files
+        if path == '/' or path == '/index.html':
+            html_file = os.path.join(CURRENT_DIR, 'web', 'index.html')
+            if os.path.exists(html_file):
+                with open(html_file, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
+        # Static assets (such as ads: /ads/ad1.png)
+        if path.startswith('/ads/') or path.startswith('/static/'):
+            clean_rel = path.lstrip('/')
+            local_path = os.path.join(CURRENT_DIR, 'web', clean_rel)
+            if os.path.exists(local_path) and os.path.isfile(local_path):
+                mime, _ = mimetypes.guess_type(local_path)
+                with open(local_path, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', mime or 'application/octet-stream')
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
+        # 2. License Info
+        if path == '/api/license':
+            return self.send_json(self.server.license_mgr.get_license_data())
+
+        # 3. System Status & Storage
+        if path == '/api/status':
+            disk_info = self.server.game_mgr.get_disk_info()
+            resp = {
+                "status": "online",
+                "version": "1.1",
+                "app_name": "RetroGame & SD Card Manager Version WiFi",
+                "host": self.server.host_ip,
+                "port": self.server.server_port,
+                "disk": disk_info,
+                "root": self.server.game_mgr.roms_root,
+                "license": self.server.license_mgr.get_license_data(),
+                "pin_required": bool(self.server.pin),
+                "brand": "เพจเล่าเรื่องเกม (Lao Reuang Game)",
+                "banner_title": "BallModThaiGame"
+            }
+            return self.send_json(resp)
+
+        # 4. Gaming Systems (Filtered if Free)
+        if path == '/api/systems':
+            systems = self.server.game_mgr.list_systems(is_premium=is_premium)
+            return self.send_json(systems)
+
+        # 5. List Games (Filtered if Free)
+        if path == '/api/games':
+            system_id = query.get('system', [''])[0]
+            if not system_id:
+                return self.send_json({"error": "Missing system parameter"}, 400)
+            refresh = query.get('refresh', ['false'])[0].lower() == 'true'
+            games = self.server.game_mgr.list_games(system_id, force_refresh=refresh, is_premium=is_premium)
+            return self.send_json({"system": system_id, "games": games, "count": len(games)})
+
+        # 6. High-Speed Image Server (Token or Path with aggressive Browser Caching)
+        if path == '/api/image':
+            token = query.get('token', [''])[0]
+            img_path = None
+
+            if token:
+                game = self.server.game_mgr.get_game_by_token(token)
+                if game and game.get("cover_abs_path") and os.path.exists(game["cover_abs_path"]):
+                    img_path = game["cover_abs_path"]
+            else:
+                system_id = query.get('system', [''])[0]
+                rel_path = query.get('path', [''])[0]
+                if system_id and rel_path:
+                    clean_rel = rel_path.lstrip('./').lstrip('/')
+                    cand = os.path.join(self.server.game_mgr.roms_root, system_id, clean_rel)
+                    if os.path.exists(cand):
+                        img_path = cand
+
+            if not img_path or not os.path.exists(img_path):
+                self.send_response(404)
+                self.end_headers()
+                return
+
+            stat = os.stat(img_path)
+            etag = f'"{int(stat.st_mtime)}-{stat.st_size}"'
+            if_none_match = self.headers.get('If-None-Match')
+            if if_none_match and if_none_match == etag:
+                self.send_response(304)
+                self.end_headers()
+                return
+
+            ext = os.path.splitext(img_path)[1].lower()
+            mime = "image/png"
+            if ext in ('.jpg', '.jpeg'):
+                mime = "image/jpeg"
+            elif ext == '.webp':
+                mime = "image/webp"
+
+            try:
+                with open(img_path, 'rb') as f:
+                    content = f.read()
+
+                self.send_response(200)
+                self.send_header('Content-Type', mime)
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('ETag', etag)
+                self.send_header('Cache-Control', 'public, max-age=604800, immutable')
+                self.end_headers()
+                self.wfile.write(content)
+            except Exception:
+                self.send_response(500)
+                self.end_headers()
+            return
+
+        # 7. Download ROM (All Tiers)
+        if path == '/api/download_rom':
+            token = query.get('token', [''])[0]
+            game = self.server.game_mgr.get_game_by_token(token)
+            if not game or not os.path.exists(game["rom_abs_path"]):
+                return self.send_json({"error": "ROM not found"}, 404)
+
+            if game["is_dir"]:
+                import zipfile, io
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+                    for root, _, files in os.walk(game["rom_abs_path"]):
+                        for file in files:
+                            full_p = os.path.join(root, file)
+                            arcname = os.path.relpath(full_p, game["rom_abs_path"])
+                            z.write(full_p, arcname)
+                buf.seek(0)
+                content = buf.read()
+                filename = f"{game['filename']}.zip"
+            else:
+                with open(game["rom_abs_path"], 'rb') as f:
+                    content = f.read()
+                filename = game["filename"]
+
+            safe_filename = urllib.parse.quote(filename)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Disposition', f'attachment; filename="{safe_filename}"; filename*=UTF-8\'\'{safe_filename}')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
+        # ================= Save Manager Endpoints (Premium Only) =================
+        if path == '/api/saves':
+            if not is_premium:
+                return self.send_json({"error": "Save Manager requires Premium membership"}, 403)
+            saves = self.server.game_mgr.list_all_saves()
+            return self.send_json({"saves": saves, "count": len(saves)})
+
+        if path == '/api/download_save':
+            if not is_premium:
+                return self.send_json({"error": "Downloading saves requires Premium membership"}, 403)
+            token = query.get('token', [''])[0]
+            game = self.server.game_mgr.get_game_by_token(token)
+            if not game or not game.get("save_abs_path") or not os.path.exists(game["save_abs_path"]):
+                return self.send_json({"error": "Save file not found"}, 404)
+
+            with open(game["save_abs_path"], 'rb') as f:
+                content = f.read()
+            filename = game["save_filename"]
+            safe_filename = urllib.parse.quote(filename)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Disposition', f'attachment; filename="{safe_filename}"; filename*=UTF-8\'\'{safe_filename}')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
+        if path == '/api/backup_all_saves':
+            if not is_premium:
+                return self.send_json({"error": "Full Save Backup requires Premium membership"}, 403)
+            zip_bytes, count = self.server.game_mgr.backup_all_saves_zip()
+            timestamp = secrets.token_hex(4)
+            filename = f"All_RetroGame_Saves_{timestamp}.zip"
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/zip')
+            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.send_header('Content-Length', str(len(zip_bytes)))
+            self.end_headers()
+            self.wfile.write(zip_bytes)
+            return
+
+        # ================= Cheat Manager Endpoints (Premium Only) =================
+        if path == '/api/cheats':
+            if not is_premium:
+                return self.send_json({"error": "Cheat Manager requires Premium membership"}, 403)
+            token = query.get('token', [''])[0]
+            if not token:
+                return self.send_json({"error": "Missing token"}, 400)
+            res = self.server.game_mgr.get_cheats_for_game(token)
+            return self.send_json(res)
+
+        self.send_response(404)
+        self.end_headers()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        content_length = int(self.headers.get('Content-Length', 0))
+        content_type = self.headers.get('Content-Type', '')
+        is_premium = self.server.license_mgr.is_premium()
+
+        # 1. Rename Game via Token (All Tiers)
+        if path == '/api/rename':
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                token = data.get('token')
+                new_name = data.get('new_name')
+                if not token or not new_name:
+                    return self.send_json({"success": False, "error": "Missing token or new_name"}, 400)
+                res = self.server.game_mgr.rename_game(token, new_name)
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+
+        # 2. Upload Cover Image via Token (All Tiers)
+        if path == '/api/upload_cover':
+            if 'multipart/form-data' not in content_type:
+                return self.send_json({"success": False, "error": "Expected multipart/form-data"}, 400)
+            boundary = content_type.split("boundary=")[1].strip()
+            body_bytes = self.rfile.read(content_length)
+            parts = parse_multipart(body_bytes, boundary)
+
+            token = parts.get('token', {}).get('data', b'').decode('utf-8').strip()
+            file_part = parts.get('file')
+            if not token or not file_part:
+                return self.send_json({"success": False, "error": "Missing token or file"}, 400)
+
+            orig_filename = file_part.get('filename') or 'cover.png'
+            ext = os.path.splitext(orig_filename)[1].lower() or '.png'
+            res = self.server.game_mgr.apply_cover(token, file_part['data'], filename_ext=ext)
+            return self.send_json(res)
+
+        # 3. Delete Game via Token (All Tiers)
+        if path == '/api/delete':
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                token = data.get('token')
+                if not token:
+                    return self.send_json({"success": False, "error": "Missing token"}, 400)
+                res = self.server.game_mgr.delete_game(token)
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+
+        # 4. Upload ROM File (Multi-file & PS1 folder support, All Tiers)
+        if path == '/api/upload_rom':
+            if 'multipart/form-data' not in content_type:
+                return self.send_json({"success": False, "error": "Expected multipart/form-data"}, 400)
+            boundary = content_type.split("boundary=")[1].strip()
+            body_bytes = self.rfile.read(content_length)
+            parts = parse_multipart(body_bytes, boundary)
+
+            system_id = parts.get('system', {}).get('data', b'').decode('utf-8').strip()
+            display_name = parts.get('display_name', {}).get('data', b'').decode('utf-8').strip()
+            is_folder = parts.get('is_folder', {}).get('data', b'').decode('utf-8').strip().lower() == 'true'
+            folder_name = parts.get('folder_name', {}).get('data', b'').decode('utf-8').strip()
+            file_part = parts.get('file')
+
+            if not file_part or not file_part.get('filename'):
+                return self.send_json({"success": False, "error": "No ROM file provided"}, 400)
+
+            filename = file_part['filename']
+            if not system_id or system_id == 'auto':
+                ext = os.path.splitext(filename)[1].lower()
+                auto_map = {
+                    '.gba': 'gba', '.gb': 'gb', '.gbc': 'gbc', '.nes': 'nes',
+                    '.sfc': 'sfc', '.smc': 'sfc', '.nds': 'nds', '.n64': 'n64',
+                    '.iso': 'psx', '.cue': 'psx', '.chd': 'psx', '.pbp': 'psx',
+                    '.md': 'megadrive', '.gen': 'megadrive'
+                }
+                system_id = auto_map.get(ext, 'gba')
+
+            res = self.server.game_mgr.save_uploaded_rom(
+                system_id, filename, file_part['data'],
+                display_name=display_name, is_folder=is_folder, folder_name=folder_name
+            )
+            return self.send_json(res)
+
+        # 5. Search Libretro Covers (All Tiers)
+        if path == '/api/search_covers':
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                query = data.get('query', '')
+                system_id = data.get('system', '')
+                results = scraper.search_box_arts(query, system_id)
+                return self.send_json({"results": results})
+            except Exception as e:
+                return self.send_json({"results": [], "error": str(e)})
+
+        # 6. Apply Online Cover directly to Token (All Tiers)
+        if path == '/api/apply_cover':
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                token = data.get('token')
+                image_url = data.get('image_url')
+                if not token or not image_url:
+                    return self.send_json({"success": False, "error": "Missing token or image_url"}, 400)
+                img_bytes = scraper.download_image_bytes(image_url)
+                res = self.server.game_mgr.apply_cover(token, img_bytes, filename_ext=".png")
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+
+        # ================= Save Manager POST Endpoints (Premium Only) =================
+        if path == '/api/delete_save':
+            if not is_premium:
+                return self.send_json({"success": False, "error": "Save Manager requires Premium membership"}, 403)
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                system_id = data.get('system')
+                filename = data.get('filename')
+                if not system_id or not filename:
+                    return self.send_json({"success": False, "error": "Missing system or filename"}, 400)
+                res = self.server.game_mgr.delete_save_file(system_id, filename)
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+
+        # ================= Cheat Manager POST Endpoints (Premium Only) =================
+        if path == '/api/save_cheats':
+            if not is_premium:
+                return self.send_json({"success": False, "error": "Cheat Manager requires Premium membership"}, 403)
+            raw_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(raw_body.decode('utf-8'))
+                token = data.get('token')
+                cheats = data.get('cheats', [])
+                if not token:
+                    return self.send_json({"success": False, "error": "Missing token"}, 400)
+                res = self.server.game_mgr.save_cheats_for_game(token, cheats)
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+
+        if path == '/api/upload_cheat_zip':
+            if not is_premium:
+                return self.send_json({"success": False, "error": "Cheat Manager requires Premium membership"}, 403)
+            if 'multipart/form-data' not in content_type:
+                return self.send_json({"success": False, "error": "Expected multipart/form-data"}, 400)
+            boundary = content_type.split("boundary=")[1].strip()
+            body_bytes = self.rfile.read(content_length)
+            parts = parse_multipart(body_bytes, boundary)
+            file_part = parts.get('file')
+            if not file_part:
+                return self.send_json({"success": False, "error": "No file provided"}, 400)
+            res = self.server.game_mgr.upload_cheat_zip(file_part['data'])
+            return self.send_json(res)
+
+        self.send_response(404)
+        self.end_headers()
+
+def main():
+    config_file = os.path.join(CURRENT_DIR, "config.json")
+    port = 8080
+    custom_roms = None
+    pin = None
+
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                port = cfg.get("port", port)
+                custom_roms = cfg.get("roms_path", custom_roms)
+                pin = cfg.get("pin", pin)
+        except Exception:
+            pass
+
+    host_ip = get_local_ip()
+    session_token = secrets.token_hex(16)
+
+    # Initialize Managers
+    license_mgr = LicenseManager(CURRENT_DIR)
+    game_mgr = ArkOSGameManager(custom_roms)
+
+    # Start Threaded Server
+    server = ThreadedHTTPServer(('0.0.0.0', port), ArkOSRequestHandler)
+    server.game_mgr = game_mgr
+    server.license_mgr = license_mgr
+    server.host_ip = host_ip
+    server.pin = pin
+    server.session_token = session_token
+
+    # Display TUI Screen on R36S Console
+    print_tui(host_ip, port, license_info=license_mgr.get_license_data(), pin=pin)
+
+    def shutdown_handler(sig, frame):
+        sys.stdout.write("\033[?25h\033[2J\033[H")
+        sys.stdout.flush()
+        print("\n[RetroGame-Manager v1.1] Exiting cleanly. Returning to ArkOS...")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown_handler)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        shutdown_handler(None, None)
+
+if __name__ == "__main__":
+    main()

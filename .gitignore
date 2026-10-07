@@ -1,0 +1,33 @@
+# ==============================================================
+# Git Ignore for RetroGame & SD Card Manager Version WiFi (Free)
+# ==============================================================
+
+# 🛑 Admin & Private License Generator (DO NOT COMMIT)
+admin_tool.py
+*Premium*.sh
+license.key
+*.key
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local test & cache folders
+cache_boxarts/
+cache_images/
+scratch/
+mock_roms/
+roms/
+
+# OS / Editor files
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Legacy Windows-only files (optional)
+# app.py
+# run.py
+# start.bat
+# sftp_client.py
