@@ -14,6 +14,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import time
 import mimetypes
+import hashlib
+import re
 
 SYSTEM_NAMES = {
     "gba": "Game Boy Advance",
@@ -202,7 +204,6 @@ class ArkOSGameManager:
             all_entries = []
 
         seen_roms = set()
-        idx = 0
 
         for entry in all_entries:
             if entry.startswith('.') or entry.lower() in ('gamelist.xml', 'images', 'boxart', 'downloaded_images'):
@@ -229,8 +230,11 @@ class ArkOSGameManager:
                 main_file = entry
 
             seen_roms.add(rom_filename.lower())
-            idx += 1
-            token = f"t_{system_id}_{idx}"
+
+            # Deterministic unique token: permanent hash based on system and rom filename
+            clean_token_key = f"{system_id}_{rom_filename}".lower()
+            token_hash = hashlib.md5(clean_token_key.encode('utf-8')).hexdigest()[:12]
+            token = f"t_{system_id}_{token_hash}"
 
             # File size
             try:
@@ -243,8 +247,17 @@ class ArkOSGameManager:
 
             size_str = self._format_size(size_bytes)
 
-            meta = xml_games.get(rom_filename.lower()) or xml_games.get(main_file.lower()) or {}
-            display_name = meta.get('name') or os.path.splitext(rom_filename)[0]
+            base_name = os.path.splitext(rom_filename)[0]
+            clean_base = self._clean_title(base_name).lower()
+
+            # Metadata matching from gamelist.xml
+            meta = (
+                xml_games.get(rom_filename.lower()) or
+                xml_games.get(main_file.lower()) or
+                xml_games.get(clean_base) or
+                {}
+            )
+            display_name = meta.get('name') or base_name
             desc = meta.get('desc', '')
 
             # Check cover
@@ -252,31 +265,40 @@ class ArkOSGameManager:
             has_cover = False
             full_cover_path = None
             if cover_path:
-                norm_cover = cover_path.lstrip('./').lstrip('/')
-                full_cover_path = os.path.join(sys_path, norm_cover)
-                has_cover = os.path.exists(full_cover_path)
+                full_cover_path = self._resolve_cover_path(cover_path, sys_path)
+                has_cover = bool(full_cover_path and os.path.exists(full_cover_path))
 
+            # If not in XML or file missing, search common cover folders
             if not has_cover:
-                base_name = os.path.splitext(rom_filename)[0]
-                for img_dir in ['images', 'boxart', 'downloaded_images']:
+                for img_dir in ['images', 'boxart', 'downloaded_images', 'media/boxart', 'media/images']:
                     for img_ext in ['.png', '.jpg', '.jpeg', '.webp']:
-                        for suffix in ['-image', '', '_cover']:
+                        for suffix in ['-image', '', '_cover', '-boxart']:
+                            # Try exact filename base
                             test_c = os.path.join(sys_path, img_dir, f"{base_name}{suffix}{img_ext}")
                             if os.path.exists(test_c):
                                 has_cover = True
                                 full_cover_path = test_c
                                 cover_path = f"./{img_dir}/{os.path.basename(test_c)}"
                                 break
+                            # Try cleaned name base (without dump tags)
+                            if clean_base:
+                                test_c2 = os.path.join(sys_path, img_dir, f"{clean_base}{suffix}{img_ext}")
+                                if os.path.exists(test_c2):
+                                    has_cover = True
+                                    full_cover_path = test_c2
+                                    cover_path = f"./{img_dir}/{os.path.basename(test_c2)}"
+                                    break
                         if has_cover:
                             break
                     if has_cover:
                         break
 
+            cover_mtime = int(os.path.getmtime(full_cover_path)) if (has_cover and full_cover_path and os.path.exists(full_cover_path)) else 0
+
             # Check save file (Premium only)
             has_save = False
             save_filename = None
             save_abs_path = None
-            base_name = os.path.splitext(rom_filename)[0]
 
             for s_ext in SAVE_EXTENSIONS:
                 s_path = os.path.join(sys_path, f"{base_name}{s_ext}")
@@ -307,6 +329,7 @@ class ArkOSGameManager:
                 "has_cover": has_cover,
                 "cover_rel_path": cover_path,
                 "cover_abs_path": full_cover_path,
+                "cover_mtime": cover_mtime,
                 "has_save": has_save,
                 "save_filename": save_filename,
                 "save_abs_path": save_abs_path,
@@ -323,6 +346,7 @@ class ArkOSGameManager:
                 "display_name": display_name,
                 "size_str": size_str,
                 "has_cover": has_cover,
+                "cover_mtime": cover_mtime,
                 "has_save": has_save if is_premium else False,
                 "save_filename": save_filename if is_premium else None,
                 "has_cheats": has_cheats if is_premium else False,
@@ -357,8 +381,57 @@ class ArkOSGameManager:
 
         return cand1  # Default target if created
 
+    @staticmethod
+    def _clean_title(text):
+        """Strips dump tags like (USA), [!], (v1.1) for fuzzy matching."""
+        if not text:
+            return ""
+        t = re.sub(r'\(.*?\)', '', text)
+        t = re.sub(r'\[.*?\]', '', t)
+        t = re.sub(r'\s+', ' ', t).strip()
+        return t
+
+    def _resolve_cover_path(self, cover_path_str, sys_path):
+        """Resolves full absolute cover path across various ArkOS/EmulationStation path formats."""
+        if not cover_path_str:
+            return None
+        p_str = cover_path_str.strip()
+
+        # 1. Direct absolute path check
+        if os.path.isabs(p_str) and os.path.exists(p_str):
+            return p_str
+
+        # 2. Check if absolute path starts with /roms/ or /roms2/ and re-map to current self.roms_root
+        for prefix in ['/roms2/', '/roms/', '/mnt/roms/', '/media/roms/']:
+            if p_str.startswith(prefix):
+                rel_part = p_str[len(prefix):]  # e.g. 'gba/images/game-image.png'
+                cand = os.path.join(self.roms_root, rel_part)
+                if os.path.exists(cand):
+                    return cand
+
+        # 3. Check ~/.emulationstation
+        if p_str.startswith('~'):
+            expanded = os.path.expanduser(p_str)
+            if os.path.exists(expanded):
+                return expanded
+
+        # 4. Standard relative path within sys_path (strip leading ./ or /)
+        norm = p_str.lstrip('.').lstrip('/')
+        cand = os.path.join(sys_path, norm)
+        if os.path.exists(cand):
+            return cand
+
+        # 5. Check if filename exists inside sys_path/images or boxart or downloaded_images
+        img_name = os.path.basename(p_str)
+        for folder in ['images', 'boxart', 'downloaded_images', 'media/boxart', 'media/images']:
+            cand = os.path.join(sys_path, folder, img_name)
+            if os.path.exists(cand):
+                return cand
+
+        return None
+
     def _parse_gamelist(self, gamelist_path, sys_path):
-        """Parse gamelist.xml efficiently using ElementTree."""
+        """Parse gamelist.xml efficiently with exact and clean title indexing."""
         result = {}
         try:
             tree = ET.parse(gamelist_path)
@@ -376,14 +449,19 @@ class ArkOSGameManager:
                 desc = desc_elem.text.strip() if (desc_elem is not None and desc_elem.text) else ""
                 image = img_elem.text.strip() if (img_elem is not None and img_elem.text) else None
 
-                key = os.path.basename(rel_path).lower()
-                result[key] = {
+                bname = os.path.basename(rel_path).lower()
+                clean_bname = self._clean_title(os.path.splitext(bname)[0]).lower()
+
+                item = {
                     "name": name,
                     "desc": desc,
                     "image": image,
                     "path": rel_path
                 }
-                result[rel_path.lower()] = result[key]
+                result[bname] = item
+                result[rel_path.lower()] = item
+                if clean_bname:
+                    result[clean_bname] = item
         except Exception as e:
             print(f"[ArkOSGameManager] XML parse error {gamelist_path}: {e}")
         return result
@@ -491,12 +569,14 @@ class ArkOSGameManager:
 
             tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
 
+            cover_mtime = int(os.path.getmtime(cover_abs_path)) if os.path.exists(cover_abs_path) else int(time.time())
             self._clear_cache_for_system(system_id)
             game["has_cover"] = True
             game["cover_abs_path"] = cover_abs_path
             game["cover_rel_path"] = rel_cover_path
+            game["cover_mtime"] = cover_mtime
 
-            return {"success": True, "cover_path": rel_cover_path}
+            return {"success": True, "cover_path": rel_cover_path, "cover_mtime": cover_mtime, "token": token}
         except Exception as e:
             return {"success": False, "error": str(e)}
 

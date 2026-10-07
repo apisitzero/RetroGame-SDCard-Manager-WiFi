@@ -227,7 +227,7 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Length', str(len(content)))
                 self.send_header('ETag', etag)
-                self.send_header('Cache-Control', 'public, max-age=604800, immutable')
+                self.send_header('Cache-Control', 'public, max-age=86400, must-revalidate')
                 self.end_headers()
                 self.wfile.write(content)
             except Exception:

@@ -27,6 +27,21 @@
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
         * {
             font-family: 'Prompt', sans-serif;
+            box-sizing: border-box;
+        }
+        html {
+            background-color: var(--color-bg, #090d16) !important;
+            background: var(--color-bg, #090d16) !important;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        body {
+            background-color: var(--color-bg, #090d16) !important;
+            background: var(--color-bg, #090d16) !important;
+            color: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
         :root {
             --color-bg: #090d16;
@@ -64,7 +79,7 @@
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.4);
         }
         ::-webkit-scrollbar-thumb {
             background: #334155;
@@ -72,7 +87,7 @@
         }
     </style>
 </head>
-<body class="bg-themebg text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300">
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300">
 
     <!-- ================= 4-Ad Fullscreen Overlay (Free Tier Only) ================= -->
     <div id="adOverlay" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 hidden">
@@ -109,21 +124,21 @@
     </div>
 
     <!-- ================= Top Navigation Bar ================= -->
-    <header class="bg-slate-950/90 backdrop-blur border-b border-themeborder sticky top-0 z-30 px-4 py-3 shadow-xl">
+    <header class="bg-slate-950/95 backdrop-blur border-b border-slate-800 sticky top-0 z-30 px-4 py-3 shadow-xl">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg text-white font-bold text-xl">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg text-white font-bold text-xl shrink-0">
                     <i class="fa-solid fa-gamepad"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center gap-2">
-                        <span>RetroGame & SD Card Manager</span>
-                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">v1.1</span>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center gap-2 text-white">
+                        <span class="text-white drop-shadow font-bold tracking-wide">RetroGame & SD Card Manager</span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 font-bold border border-indigo-400/40 shadow-sm">v1.1</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5">
-                        <span>เพจเล่าเรื่องเกม</span>
-                        <span class="text-slate-600">•</span>
-                        <span class="font-mono text-pink-400">BallModThaiGame</span>
+                    <p class="text-xs flex items-center gap-2 mt-0.5">
+                        <span class="text-amber-300 font-semibold drop-shadow-sm">เพจเล่าเรื่องเกม</span>
+                        <span class="text-slate-500 font-bold">•</span>
+                        <span class="font-mono text-pink-400 font-semibold tracking-wide">BallModThaiGame</span>
                     </p>
                 </div>
             </div>
@@ -131,29 +146,29 @@
             <!-- License Status & Quick Info -->
             <div class="flex items-center gap-2 flex-wrap">
                 <!-- MAC Address & Copy -->
-                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-900 border border-slate-700 text-slate-300 font-mono">
-                    <i class="fa-solid fa-network-wired text-slate-400"></i>
-                    <span>MAC:</span>
-                    <span id="macText" class="font-bold text-white">-</span>
-                    <button onclick="copyMAC()" title="คัดลอก MAC Address ส่งให้แอดมิน" class="ml-1 text-slate-400 hover:text-indigo-400">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-900 border border-slate-700 text-slate-200 font-mono shadow-sm">
+                    <i class="fa-solid fa-network-wired text-indigo-400"></i>
+                    <span class="text-slate-300 font-semibold">MAC:</span>
+                    <span id="macText" class="font-bold text-amber-300 font-mono tracking-wider">-</span>
+                    <button onclick="copyMAC()" title="คัดลอก MAC Address ส่งให้แอดมิน" class="ml-1 text-slate-400 hover:text-indigo-300 transition p-0.5">
                         <i class="fa-regular fa-copy"></i>
                     </button>
                 </div>
 
                 <!-- License Badge -->
-                <div id="licenseBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-slate-800 text-slate-300 border-slate-700">
-                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <div id="licenseBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-900 text-slate-100 border-slate-700 shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span id="licenseText">กำลังตรวจสอบสิทธิ์...</span>
                 </div>
 
                 <!-- Multi-ROM Upload Button -->
-                <button onclick="openUploadModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">
+                <button onclick="openUploadModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">
                     <i class="fa-solid fa-plus"></i>
                     <span>ลงเกมใหม่ (ROM)</span>
                 </button>
 
                 <!-- Exit / Shutdown Button -->
-                <button onclick="confirmExitServer()" title="ปิดระบบและกลับสู่หน้าหลัก ArkOS บนเครื่องเล่นเกม" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600/80 hover:bg-rose-600 text-white shadow transition">
+                <button onclick="confirmExitServer()" title="ปิดระบบและกลับสู่หน้าหลัก ArkOS บนเครื่องเล่นเกม" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow transition">
                     <i class="fa-solid fa-power-off"></i>
                     <span>ปิดระบบ (Exit)</span>
                 </button>
@@ -194,33 +209,33 @@
         <!-- Storage & System Bar -->
         <div class="bg-themecard border border-themeborder rounded-2xl p-4 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="w-full md:w-auto flex-1 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl shrink-0">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-xl shrink-0">
                     <i class="fa-solid fa-hard-drive"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between text-xs mb-1.5">
-                        <span class="font-medium text-slate-300">พื้นที่ความจุ MicroSD Card:</span>
-                        <span class="font-mono text-indigo-300 font-semibold" id="diskUsageText">กำลังคำนวณ...</span>
+                        <span class="font-bold text-slate-100">พื้นที่ความจุ MicroSD Card:</span>
+                        <span class="font-mono text-indigo-300 font-bold text-sm" id="diskUsageText">กำลังคำนวณ...</span>
                     </div>
-                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
+                    <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-700/60 shadow-inner">
                         <div id="diskProgressBar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                        <span id="diskFreeText">พื้นที่ว่าง...</span>
-                        <span id="diskPercentText" class="font-mono text-slate-300 font-medium">0%</span>
+                    <div class="flex items-center justify-between text-xs mt-1">
+                        <span id="diskFreeText" class="text-emerald-400 font-semibold">พื้นที่ว่าง...</span>
+                        <span id="diskPercentText" class="font-mono text-white font-bold">0%</span>
                     </div>
                 </div>
             </div>
 
             <!-- Page Brand Badge -->
             <div class="w-full md:w-auto flex items-center justify-end border-t md:border-t-0 md:border-l border-themeborder pt-3 md:pt-0 md:pl-4">
-                <div class="flex items-center gap-2.5 text-xs text-slate-400">
-                    <div class="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center text-sm">
+                <div class="flex items-center gap-2.5 text-xs text-slate-300">
+                    <div class="w-8 h-8 rounded-lg bg-pink-500/15 border border-pink-500/30 text-pink-400 flex items-center justify-center text-sm shadow-sm">
                         <i class="fa-solid fa-heart"></i>
                     </div>
                     <div>
-                        <div class="text-slate-200 font-medium">เพจเล่าเรื่องเกม & BallModThaiGame</div>
-                        <div class="text-[10px] text-slate-400">สนับสนุนม็อดภาษาไทย & เกมเรโทร</div>
+                        <div class="text-slate-100 font-bold">เพจเล่าเรื่องเกม & BallModThaiGame</div>
+                        <div class="text-[11px] text-amber-300/90 font-medium">สนับสนุนม็อดภาษาไทย & เกมเรโทร</div>
                     </div>
                 </div>
             </div>
@@ -230,9 +245,9 @@
         <div id="viewGames" class="flex flex-col lg:flex-row gap-4 items-start flex-1">
             <!-- Systems Sidebar -->
             <div class="w-full lg:w-64 bg-themecard border border-themeborder rounded-2xl p-3 shadow-lg flex flex-col gap-2 shrink-0">
-                <div class="flex items-center justify-between px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    <span>ระบบเครื่องเล่น (<span id="systemsCount">0</span>)</span>
-                    <i class="fa-solid fa-layer-group"></i>
+                <div class="flex items-center justify-between px-2 py-1 text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    <span>ระบบเครื่องเล่น (<span id="systemsCount" class="text-indigo-300 font-bold">0</span>)</span>
+                    <i class="fa-solid fa-layer-group text-indigo-400"></i>
                 </div>
                 <div id="systemsList" class="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-y-auto max-h-[140px] lg:max-h-[600px] p-1">
                     <div class="text-xs text-slate-500 text-center py-4">กำลังโหลดระบบเกม...</div>
@@ -897,7 +912,7 @@
             }).join('');
         }
 
-        async function selectSystem(sysId) {
+        async function selectSystem(sysId, forceRefresh = false) {
             state.currentSystem = sysId;
             const sys = state.systems.find(s => s.id === sysId);
             renderSystems(state.systems);
@@ -909,10 +924,13 @@
             }
 
             const container = document.getElementById('gamesContainer');
-            container.innerHTML = `<div class="py-20 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500 mb-2"></i><div>กำลังดึงข้อมูล...</div></div>`;
+            if (!forceRefresh) {
+                container.innerHTML = `<div class="py-20 text-center text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-400 mb-2"></i><div>กำลังดึงข้อมูล...</div></div>`;
+            }
 
             try {
-                const res = await fetch(`/api/games?system=${encodeURIComponent(sysId)}`);
+                const url = `/api/games?system=${encodeURIComponent(sysId)}${forceRefresh ? '&refresh=true&_t=' + Date.now() : ''}`;
+                const res = await fetch(url);
                 const data = await res.json();
                 if (data.games) {
                     state.games = data.games;
@@ -927,12 +945,12 @@
         function renderGames(games) {
             const container = document.getElementById('gamesContainer');
             if (!games || games.length === 0) {
-                container.innerHTML = `<div class="py-20 text-center text-xs text-slate-500"><i class="fa-solid fa-box-open text-4xl mb-2"></i><div>ไม่มีเกมในระบบนี้</div></div>`;
+                container.innerHTML = `<div class="py-20 text-center text-xs text-slate-400"><i class="fa-solid fa-box-open text-4xl mb-2 text-slate-600"></i><div>ไม่มีเกมในระบบนี้</div></div>`;
                 return;
             }
 
             container.innerHTML = `
-                <div class="${state.viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5' : 'divide-y divide-slate-800 bg-slate-950/60 rounded-xl border border-slate-800'}">
+                <div class="${state.viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5' : 'divide-y divide-slate-800 bg-slate-950/80 rounded-xl border border-slate-800'}">
                     ${games.map((g, idx) => state.viewMode === 'grid' ? renderGameCard(g, idx) : renderGameRow(g, idx)).join('')}
                 </div>
             `;
@@ -975,35 +993,36 @@
         }
 
         function renderGameCard(g, idx) {
-            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            const coverVersion = g.cover_mtime || state.coverRefreshTime || 1;
+            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}&v=${coverVersion}` : '';
             const safeDisplayName = escapeHtml(g.display_name);
             const safeFilename = escapeHtml(g.filename);
             const escapedJsName = safeDisplayName.replace(/'/g, "\\'");
 
             return `
-                <div class="group bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-xl overflow-hidden flex flex-col transition hover:shadow-lg">
+                <div id="gameCard_${g.token}" class="group bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 rounded-xl overflow-hidden flex flex-col transition hover:shadow-xl shadow-md">
                     <!-- Clickable Cover Container (Requirement 2) -->
                     <div onclick="openCoverModal('${g.token}')" title="คลิกเพื่อแก้ไข/เปลี่ยนรูปปก" class="relative aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/80 cursor-pointer group/cover">
                         ${g.has_cover ? `
-                            <img src="${coverUrl}" alt="${safeDisplayName}" loading="lazy" class="w-full h-full object-contain p-1 group-hover/cover:scale-105 transition duration-300">
+                            <img id="coverImg_${g.token}" src="${coverUrl}" alt="${safeDisplayName}" loading="lazy" class="w-full h-full object-contain p-1 group-hover/cover:scale-105 transition duration-300">
                         ` : `
-                            <div class="flex flex-col items-center gap-1.5 text-slate-600 group-hover/cover:text-indigo-400 transition">
+                            <div id="coverPlaceholder_${g.token}" class="flex flex-col items-center gap-1.5 text-slate-500 group-hover/cover:text-indigo-400 transition">
                                 <i class="fa-solid fa-image text-3xl"></i>
-                                <span class="text-[10px]">กดเพื่อใส่รูปปก</span>
+                                <span class="text-[10px] font-medium">กดเพื่อใส่รูปปก</span>
                             </div>
                         `}
 
                         <!-- Hover Overlay to edit cover -->
                         <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition flex flex-col items-center justify-center gap-1 text-white">
                             <i class="fa-solid fa-camera text-xl text-indigo-400"></i>
-                            <span class="text-[10px] font-medium bg-indigo-600/90 px-2 py-0.5 rounded shadow">เปลี่ยนรูปปก</span>
+                            <span class="text-[10px] font-bold bg-indigo-600 px-2 py-0.5 rounded shadow">เปลี่ยนรูปปก</span>
                         </div>
 
                         <!-- Cheat Dot indicator (Premium) -->
                         ${g.has_cheats ? `
-                            <div class="absolute top-2 left-2 flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-500/30" title="มีสูตรโกง">
+                            <div class="absolute top-2 left-2 flex items-center gap-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-500/40" title="มีสูตรโกง">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span>สูตร</span>
+                                <span class="font-bold">สูตร</span>
                             </div>
                         ` : ''}
                     </div>
@@ -1011,31 +1030,31 @@
                     <div class="p-2.5 flex-1 flex flex-col justify-between gap-1.5">
                         <div>
                             <!-- Clickable Title to Rename (Requirement 2) -->
-                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1 hover:text-indigo-400 transition">
-                                <div class="text-xs font-semibold text-slate-100 group-hover/title:text-indigo-400 truncate flex-1">${safeDisplayName}</div>
-                                <i class="fa-solid fa-pen text-[9px] text-slate-500 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-400 shrink-0"></i>
+                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1 hover:text-indigo-300 transition">
+                                <div class="text-xs font-bold text-white group-hover/title:text-indigo-300 truncate flex-1 tracking-tight">${safeDisplayName}</div>
+                                <i class="fa-solid fa-pen text-[9px] text-slate-400 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-300 shrink-0"></i>
                             </div>
-                            <div class="text-[10px] text-slate-500 font-mono truncate">${safeFilename}</div>
+                            <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">${safeFilename}</div>
                         </div>
 
                         <!-- Card Actions Toolbar (Requirement 2) -->
-                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/60 mt-1">
-                            <span class="font-mono bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300">${g.size_str}</span>
+                        <div class="flex items-center justify-between text-[11px] text-slate-300 pt-1.5 border-t border-slate-800/80 mt-1">
+                            <span class="font-mono bg-slate-800 text-slate-200 font-semibold px-2 py-0.5 rounded text-[10px] border border-slate-700">${g.size_str}</span>
                             <div class="flex items-center gap-1">
                                 <!-- Change Cover Button -->
-                                <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="text-slate-400 hover:text-indigo-400 p-1 transition">
+                                <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="text-indigo-300 hover:text-white hover:bg-indigo-600/60 p-1 rounded transition">
                                     <i class="fa-regular fa-image"></i>
                                 </button>
                                 <!-- Rename Game Button -->
-                                <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="text-slate-400 hover:text-amber-400 p-1 transition">
+                                <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="text-amber-300 hover:text-white hover:bg-amber-600/60 p-1 rounded transition">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
                                 <!-- Download ROM -->
-                                <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลด ROM" class="text-slate-400 hover:text-emerald-400 p-1 transition">
+                                <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลด ROM" class="text-emerald-300 hover:text-white hover:bg-emerald-600/60 p-1 rounded transition">
                                     <i class="fa-solid fa-download"></i>
                                 </a>
                                 <!-- Delete Game -->
-                                <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="text-slate-400 hover:text-rose-400 p-1 transition">
+                                <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="text-rose-400 hover:text-white hover:bg-rose-600/60 p-1 rounded transition">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                                 ${g.has_save ? `
@@ -1054,42 +1073,43 @@
         }
 
         function renderGameRow(g, idx) {
-            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            const coverVersion = g.cover_mtime || state.coverRefreshTime || 1;
+            const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}&v=${coverVersion}` : '';
             const safeDisplayName = escapeHtml(g.display_name);
             const safeFilename = escapeHtml(g.filename);
             const escapedJsName = safeDisplayName.replace(/'/g, "\\'");
 
             return `
-                <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition">
+                <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-900/80 transition">
                     <div class="flex items-center gap-3 min-w-0">
                         <!-- Clickable Cover Thumbnail -->
                         <div onclick="openCoverModal('${g.token}')" title="คลิกเพื่อแก้ไขรูปปก" class="w-10 h-12 bg-slate-950 rounded flex items-center justify-center overflow-hidden shrink-0 border border-slate-800 cursor-pointer relative group/rowcover">
-                            ${g.has_cover ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain">` : `<i class="fa-solid fa-image text-slate-700 text-xs"></i>`}
+                            ${g.has_cover ? `<img id="coverRowImg_${g.token}" src="${coverUrl}" loading="lazy" class="w-full h-full object-contain">` : `<i class="fa-solid fa-image text-slate-600 text-xs"></i>`}
                             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/rowcover:opacity-100 transition flex items-center justify-center text-white">
                                 <i class="fa-solid fa-camera text-xs text-indigo-400"></i>
                             </div>
                         </div>
                         <div class="min-w-0">
                             <!-- Clickable Title to Rename -->
-                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1.5 hover:text-indigo-400 transition">
-                                <span class="text-xs font-semibold text-slate-200 group-hover/title:text-indigo-400 truncate">${safeDisplayName}</span>
-                                <i class="fa-solid fa-pen text-[9px] text-slate-500 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-400 shrink-0"></i>
-                                ${g.has_cheats ? `<span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">สูตร</span>` : ''}
+                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1.5 hover:text-indigo-300 transition">
+                                <span class="text-xs font-bold text-white group-hover/title:text-indigo-300 truncate">${safeDisplayName}</span>
+                                <i class="fa-solid fa-pen text-[9px] text-slate-400 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-300 shrink-0"></i>
+                                ${g.has_cheats ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">สูตร</span>` : ''}
                             </div>
-                            <div class="text-[10px] text-slate-500 font-mono truncate">${safeFilename}</div>
+                            <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">${safeFilename}</div>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">${g.size_str}</span>
+                        <span class="text-[10px] font-mono text-slate-200 bg-slate-800 px-2 py-0.5 rounded font-semibold border border-slate-700">${g.size_str}</span>
                         <!-- Change Cover Button -->
-                        <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="p-1.5 text-slate-400 hover:text-indigo-400 transition"><i class="fa-regular fa-image"></i></button>
+                        <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="p-1.5 text-indigo-300 hover:text-white hover:bg-indigo-600/60 rounded transition"><i class="fa-regular fa-image"></i></button>
                         <!-- Rename Game Button -->
-                        <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="p-1.5 text-slate-400 hover:text-amber-400 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="p-1.5 text-amber-300 hover:text-white hover:bg-amber-600/60 rounded transition"><i class="fa-solid fa-pen-to-square"></i></button>
                         <!-- Download ROM -->
-                        <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="โหลด ROM" class="p-1.5 text-slate-400 hover:text-emerald-400 transition"><i class="fa-solid fa-download"></i></a>
+                        <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="โหลด ROM" class="p-1.5 text-emerald-300 hover:text-white hover:bg-emerald-600/60 rounded transition"><i class="fa-solid fa-download"></i></a>
                         <!-- Delete Game -->
-                        <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="p-1.5 text-slate-400 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="p-1.5 text-rose-400 hover:text-white hover:bg-rose-600/60 rounded transition"><i class="fa-solid fa-trash"></i></button>
                         ${g.has_save ? `<a href="/api/download_save?token=${encodeURIComponent(g.token)}" download title="โหลดเซฟ" class="p-1.5 text-amber-400 hover:text-amber-300 transition"><i class="fa-solid fa-floppy-disk"></i></a>` : ''}
                         ${g.has_cheats ? `<button onclick="openCheatModal('${g.token}')" title="จัดการสูตร" class="p-1.5 text-emerald-400 hover:text-emerald-300 transition"><i class="fa-solid fa-wand-magic-sparkles"></i></button>` : ''}
                     </div>
@@ -1239,10 +1259,27 @@
                 const data = await res.json();
                 if (data.success) {
                     showToast('บันทึกรูปปกเกมเรียบร้อยแล้ว');
+                    state.coverRefreshTime = Date.now();
+                    const newMtime = data.cover_mtime || Date.now();
+
                     const game = state.games.find(g => g.token === token);
-                    if (game) game.has_cover = true;
+                    if (game) {
+                        game.has_cover = true;
+                        game.cover_mtime = newMtime;
+                    }
+
+                    // Real-time instant DOM image update
+                    const imgEl = document.getElementById(`coverImg_${token}`);
+                    if (imgEl) {
+                        imgEl.src = `/api/image?token=${encodeURIComponent(token)}&v=${newMtime}`;
+                    }
+                    const rowImgEl = document.getElementById(`coverRowImg_${token}`);
+                    if (rowImgEl) {
+                        rowImgEl.src = `/api/image?token=${encodeURIComponent(token)}&v=${newMtime}`;
+                    }
+
                     closeCoverModal();
-                    selectSystem(state.currentSystem);
+                    await selectSystem(state.currentSystem, true);
                 } else {
                     showToast('บันทึกปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -1287,10 +1324,27 @@
                 const data = await res.json();
                 if (data.success) {
                     showToast('อัปโหลดรูปปกเกมเรียบร้อยแล้ว');
+                    state.coverRefreshTime = Date.now();
+                    const newMtime = data.cover_mtime || Date.now();
+
                     const game = state.games.find(g => g.token === token);
-                    if (game) game.has_cover = true;
+                    if (game) {
+                        game.has_cover = true;
+                        game.cover_mtime = newMtime;
+                    }
+
+                    // Real-time instant DOM image update
+                    const imgEl = document.getElementById(`coverImg_${token}`);
+                    if (imgEl) {
+                        imgEl.src = `/api/image?token=${encodeURIComponent(token)}&v=${newMtime}`;
+                    }
+                    const rowImgEl = document.getElementById(`coverRowImg_${token}`);
+                    if (rowImgEl) {
+                        rowImgEl.src = `/api/image?token=${encodeURIComponent(token)}&v=${newMtime}`;
+                    }
+
                     closeCoverModal();
-                    selectSystem(state.currentSystem);
+                    await selectSystem(state.currentSystem, true);
                 } else {
                     showToast('อัปโหลดปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -1954,7 +2008,7 @@
             setTimeout(() => {
                 closeUploadModal();
                 btn.disabled = false;
-                selectSystem(state.currentSystem || (appliedItems[0] ? appliedItems[0].system : 'gba'));
+                selectSystem(state.currentSystem || (appliedItems[0] ? appliedItems[0].system : 'gba'), true);
                 loadStatus();
             }, 1200);
         }
