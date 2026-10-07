@@ -161,20 +161,20 @@
                 <span>จัดการเกม (Games)</span>
             </button>
             
-            <!-- Premium Only Tabs -->
-            <button onclick="switchMainTab('saves')" id="tabBtnSaves" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+            <!-- Premium Only Tabs (Completely Hidden on Free Tier) -->
+            <button onclick="switchMainTab('saves')" id="tabBtnSaves" style="display: none !important;" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-floppy-disk text-amber-400"></i>
                 <span>Save Manager</span>
                 <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">PRO</span>
             </button>
 
-            <button onclick="switchMainTab('cheats')" id="tabBtnCheats" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+            <button onclick="switchMainTab('cheats')" id="tabBtnCheats" style="display: none !important;" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-wand-magic-sparkles text-emerald-400"></i>
                 <span>Cheat Manager</span>
                 <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">PRO</span>
             </button>
 
-            <button onclick="switchMainTab('themes')" id="tabBtnThemes" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 hidden">
+            <button onclick="switchMainTab('themes')" id="tabBtnThemes" style="display: none !important;" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-palette text-pink-400"></i>
                 <span>ธีมสี (Themes)</span>
                 <span class="text-[9px] px-1.5 py-0.2 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">PRO</span>
@@ -386,10 +386,10 @@
 
     </main>
 
-    <!-- ================= Modal: Multi-ROM Uploader with Review Popup ================= -->
-    <div id="uploadModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between border-b border-themeborder p-4 bg-slate-900/50">
+    <!-- ================= Modal: Multi-ROM Uploader with Review Popup (Section 6.3 & 6.4) ================= -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-themeborder p-4 bg-slate-900/60">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -410,7 +410,7 @@
                     <span class="text-[11px] text-slate-400 mt-1">หรือกดปุ่มเลือกด้านล่าง (รองรับทั้งไฟล์เดี่ยวและโฟลเดอร์ PS1)</span>
                     
                     <div class="flex items-center gap-2 mt-4">
-                        <button type="button" onclick="document.getElementById('multiFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                        <button type="button" onclick="document.getElementById('multiFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow">
                             <i class="fa-solid fa-file"></i>
                             <span>เลือกไฟล์เกม (หลายไฟล์)</span>
                         </button>
@@ -424,33 +424,152 @@
                 </div>
             </div>
 
-            <!-- Step 2: Review List Popup -->
-            <div id="uploadReviewZone" class="p-4 flex-1 overflow-y-auto flex-col gap-3 hidden">
-                <div class="flex items-center justify-between text-xs">
-                    <span class="font-bold text-slate-300">รายการเกมที่ตรวจพบ (<span id="queueCount">0</span> เกม):</span>
-                    <button onclick="resetUploadQueue()" class="text-rose-400 hover:underline text-[11px]">เลือกใหม่</button>
+            <!-- Step 2: Review List Popup (Section 6.3) -->
+            <div id="uploadReviewZone" class="p-4 flex-1 overflow-y-auto flex flex-col gap-3 hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                            <span>หน้าต่าง Review ก่อนอัปโหลด (ตรวจพบ <span id="queueCount" class="text-indigo-400 font-mono">0</span> เกม)</span>
+                            <span id="queueTotalBytes" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">0 MB</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-0.5">เลือกปกเกมอัตโนมัติจาก Libretro หรืออัปโหลดปกภาษาไทยเองได้ทีละเกม</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                            <input type="checkbox" id="masterQueueCheck" checked onchange="toggleAllQueueItems(this.checked)" class="w-3.5 h-3.5 rounded text-indigo-600">
+                            <span class="text-[11px]">เลือกทั้งหมด</span>
+                        </label>
+                        <button onclick="resetUploadQueue()" class="text-rose-400 hover:underline text-[11px] flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span>เลือกใหม่</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Review Accordion/List grouped by System -->
-                <div id="reviewList" class="flex flex-col gap-2 max-h-[360px] overflow-y-auto"></div>
+                <!-- Review Section List grouped by System (Section 6.3) -->
+                <div id="reviewList" class="flex flex-col gap-3 max-h-[380px] overflow-y-auto p-1"></div>
 
-                <!-- Progress Bar -->
-                <div id="uploadProgressContainer" class="hidden flex-col gap-1.5 pt-2 border-t border-slate-800">
-                    <div class="flex items-center justify-between text-xs font-mono">
-                        <span id="uploadStatusText">กำลังอัปโหลด...</span>
-                        <span id="uploadPercentText">0%</span>
+                <!-- Section 6.4 Progress Bar -->
+                <div id="uploadProgressContainer" class="hidden flex-col gap-2 pt-3 border-t border-slate-800 bg-slate-950/60 p-3 rounded-xl border border-indigo-500/20">
+                    <div class="flex items-center justify-between text-xs">
+                        <span id="uploadStatusText" class="font-medium text-slate-200 flex items-center gap-1.5 truncate">
+                            <i class="fa-solid fa-spinner fa-spin text-indigo-400"></i>
+                            <span>กำลังเตรียมข้อมูลอัปโหลด...</span>
+                        </span>
+                        <div class="flex items-center gap-2 font-mono shrink-0">
+                            <span id="uploadBytesText" class="text-indigo-400 font-bold">0.0 / 0.0 MB</span>
+                            <span id="uploadPercentText" class="text-slate-200 bg-indigo-600/30 px-2 py-0.5 rounded border border-indigo-500/40 font-bold">0%</span>
+                        </div>
                     </div>
-                    <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
-                        <div id="uploadProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
+                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/80">
+                        <div id="uploadProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
                     </div>
+                    <div id="uploadCurrentFileText" class="text-[11px] text-slate-400 font-mono truncate">พร้อมส่งข้อมูล</div>
                 </div>
 
                 <!-- Bottom confirm button -->
-                <div class="flex justify-end gap-2 pt-3 border-t border-themeborder mt-2">
-                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">ยกเลิก</button>
-                    <button type="button" id="btnStartBatchUpload" onclick="startBatchUpload()" class="px-5 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span>ยืนยันและเริ่มอัปโหลดทั้งหมด</span>
+                <div class="flex items-center justify-between pt-3 border-t border-themeborder mt-2">
+                    <div class="text-[11px] text-slate-400">
+                        พร้อมส่ง <span id="btnUploadCount" class="font-bold text-slate-200 font-mono">0</span> เกม (<span id="btnUploadBytes" class="font-mono text-indigo-400">0 MB</span>)
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">ยกเลิก</button>
+                        <button type="button" id="btnStartBatchUpload" onclick="startBatchUpload()" class="px-5 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-lg">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>ยืนยันและเริ่มอัปโหลดทั้งหมด</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: Rename Game (Requirement 2) ================= -->
+    <div id="renameModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-themeborder pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100">เปลี่ยนชื่อเกม (Rename)</h3>
+                        <p class="text-[11px] text-slate-400 truncate max-w-[220px]" id="renameModalFilename">-</p>
+                    </div>
+                </div>
+                <button onclick="closeRenameModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-300 font-medium mb-1.5">ชื่อเกมใหม่ (แสดงบนเมนูเครื่องเล่นเกม):</label>
+                <input type="text" id="renameInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter') submitRename()">
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-themeborder">
+                <button type="button" onclick="closeRenameModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white">ยกเลิก</button>
+                <button type="button" onclick="submitRename()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium shadow">
+                    บันทึกชื่อเกม
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: Cover Image Manager (Requirement 2) ================= -->
+    <div id="coverModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="bg-themecard border border-themeborder rounded-2xl w-full max-w-2xl max-h-[90vh] p-5 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-themeborder pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm text-slate-100">จัดการรูปปกเกม (Cover Image)</h3>
+                        <p class="text-[11px] text-slate-400 truncate max-w-[320px]" id="coverModalGameTitle">-</p>
+                    </div>
+                </div>
+                <button onclick="closeCoverModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Cover Tabs -->
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+                <button onclick="switchCoverTab('scraper')" id="coverTabScraperBtn" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>ค้นหาปกจาก Libretro (อัตโนมัติ)</span>
+                </button>
+                <button onclick="switchCoverTab('upload')" id="coverTabUploadBtn" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>อัปโหลดรูปปกเอง (เช่น เกมม็อดไทย)</span>
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Scraper Search -->
+            <div id="coverTabScraper" class="flex flex-col gap-3 flex-1 overflow-hidden">
+                <div class="flex gap-2">
+                    <input type="text" id="coverSearchInput" placeholder="พิมพ์ชื่อเกมเพื่อค้นหาปก..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter') searchCoversOnline()">
+                    <button onclick="searchCoversOnline()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>ค้นหา</span>
+                    </button>
+                </div>
+                <div id="coverSearchResults" class="flex-1 overflow-y-auto min-h-[240px] max-h-[380px] grid grid-cols-2 sm:grid-cols-4 gap-3 p-1">
+                    <div class="col-span-full py-12 text-center text-xs text-slate-500">กดปุ่มค้นหาเพื่อดึงรูปปกจากฐานข้อมูล Libretro</div>
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Custom Cover Upload -->
+            <div id="coverTabUpload" class="flex flex-col gap-4 flex-1 hidden">
+                <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition bg-slate-950/40" onclick="document.getElementById('coverFileInput').click()">
+                    <i class="fa-regular fa-image text-4xl text-indigo-400 mb-2"></i>
+                    <span class="text-xs font-semibold text-slate-200">เลือกไฟล์รูปปกจากอุปกรณ์ของคุณ (PNG, JPG, WEBP)</span>
+                    <span class="text-[11px] text-slate-400 mt-1">เหมาะสำหรับเกมแปลไทย ม็อดไทย หรือรูปปกสั่งทำพิเศษ</span>
+                    <input type="file" id="coverFileInput" accept="image/*" class="hidden" onchange="previewCustomCover(event)">
+                </div>
+                <div id="customCoverPreviewContainer" class="hidden flex items-center gap-4 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                    <img id="customCoverPreview" src="" class="w-16 h-20 object-contain rounded border border-slate-700 bg-black">
+                    <div class="flex-1 min-w-0 text-xs">
+                        <div id="customCoverFilename" class="font-medium text-slate-200 truncate">-</div>
+                        <div id="customCoverFilesize" class="text-[10px] text-slate-500 font-mono mt-0.5">-</div>
+                    </div>
+                    <button onclick="submitCustomCoverUpload()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium shadow">
+                        บันทึกรูปปกนี้
                     </button>
                 </div>
             </div>
@@ -546,7 +665,11 @@
             activeTab: 'games',
             uploadQueue: [],
             currentCheatToken: null,
-            currentCheats: []
+            currentCheats: [],
+            renameToken: null,
+            coverToken: null,
+            coverActiveTab: 'scraper',
+            customCoverFile: null
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -608,17 +731,17 @@
                 badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>💎 Premium (${lic.days_left} วัน)</span>`;
                 
                 // Show Premium Tabs
-                document.getElementById('tabBtnSaves').classList.remove('hidden');
-                document.getElementById('tabBtnCheats').classList.remove('hidden');
-                document.getElementById('tabBtnThemes').classList.remove('hidden');
+                document.getElementById('tabBtnSaves').style.setProperty('display', 'inline-flex', 'important');
+                document.getElementById('tabBtnCheats').style.setProperty('display', 'inline-flex', 'important');
+                document.getElementById('tabBtnThemes').style.setProperty('display', 'inline-flex', 'important');
             } else {
                 badge.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-slate-800 text-slate-300 border-slate-700';
                 badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span>🆓 Free Tier</span>`;
                 
-                // Hide Premium Tabs
-                document.getElementById('tabBtnSaves').classList.add('hidden');
-                document.getElementById('tabBtnCheats').classList.add('hidden');
-                document.getElementById('tabBtnThemes').classList.add('hidden');
+                // Strictly hide Premium Tabs completely on Free Tier
+                document.getElementById('tabBtnSaves').style.setProperty('display', 'none', 'important');
+                document.getElementById('tabBtnCheats').style.setProperty('display', 'none', 'important');
+                document.getElementById('tabBtnThemes').style.setProperty('display', 'none', 'important');
             }
         }
 
@@ -680,6 +803,10 @@
 
         // ================= Main Tabs Switching =================
         function switchMainTab(tab) {
+            if (!state.license.is_premium && (tab === 'saves' || tab === 'cheats' || tab === 'themes')) {
+                showToast('ฟังก์ชันนี้สำหรับสมาชิก Premium เท่านั้น', false);
+                return;
+            }
             state.activeTab = tab;
             const views = {
                 games: document.getElementById('viewGames'),
@@ -785,16 +912,67 @@
             `;
         }
 
+        function cleanGameTitle(str) {
+            if (!str) return '';
+            let s = str.replace(/\.[^/.]+$/, ""); // strip file extension
+            s = s.replace(/\(.*?\)/g, "").replace(/\[.*?\]/g, ""); // strip dump tags
+            return s.trim();
+        }
+
+        const SYSTEM_NAMES = {
+            'gba': 'Game Boy Advance (GBA)',
+            'gb': 'Game Boy (GB)',
+            'gbc': 'Game Boy Color (GBC)',
+            'sfc': 'Super Nintendo (SNES / SFC)',
+            'snes': 'Super Nintendo (SNES)',
+            'nes': 'Nintendo Entertainment System (NES / FC)',
+            'fc': 'Famicom (FC)',
+            'n64': 'Nintendo 64 (N64)',
+            'nds': 'Nintendo DS (NDS)',
+            'psx': 'Sony PlayStation (PS1)',
+            'ps1': 'Sony PlayStation (PS1)',
+            'psp': 'PlayStation Portable (PSP)',
+            'megadrive': 'Sega Mega Drive (MD / Genesis)',
+            'genesis': 'Sega Genesis',
+            'mastersystem': 'Sega Master System',
+            'gamegear': 'Sega Game Gear',
+            'dreamcast': 'Sega Dreamcast',
+            'saturn': 'Sega Saturn',
+            'neogeo': 'SNK Neo Geo',
+            'arcade': 'Arcade Games',
+            'mame': 'MAME'
+        };
+
+        function getSystemTitle(sysId) {
+            if (!sysId) return 'Game';
+            return SYSTEM_NAMES[sysId.toLowerCase()] || sysId.toUpperCase();
+        }
+
         function renderGameCard(g, idx) {
             const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            const safeDisplayName = escapeHtml(g.display_name);
+            const safeFilename = escapeHtml(g.filename);
+            const escapedJsName = safeDisplayName.replace(/'/g, "\\'");
+
             return `
                 <div class="group bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-xl overflow-hidden flex flex-col transition hover:shadow-lg">
-                    <div class="relative aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/80">
+                    <!-- Clickable Cover Container (Requirement 2) -->
+                    <div onclick="openCoverModal('${g.token}')" title="คลิกเพื่อแก้ไข/เปลี่ยนรูปปก" class="relative aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/80 cursor-pointer group/cover">
                         ${g.has_cover ? `
-                            <img src="${coverUrl}" alt="${escapeHtml(g.display_name)}" loading="lazy" class="w-full h-full object-contain p-1 group-hover:scale-105 transition">
+                            <img src="${coverUrl}" alt="${safeDisplayName}" loading="lazy" class="w-full h-full object-contain p-1 group-hover/cover:scale-105 transition duration-300">
                         ` : `
-                            <i class="fa-solid fa-image text-slate-700 text-3xl"></i>
+                            <div class="flex flex-col items-center gap-1.5 text-slate-600 group-hover/cover:text-indigo-400 transition">
+                                <i class="fa-solid fa-image text-3xl"></i>
+                                <span class="text-[10px]">กดเพื่อใส่รูปปก</span>
+                            </div>
                         `}
+
+                        <!-- Hover Overlay to edit cover -->
+                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition flex flex-col items-center justify-center gap-1 text-white">
+                            <i class="fa-solid fa-camera text-xl text-indigo-400"></i>
+                            <span class="text-[10px] font-medium bg-indigo-600/90 px-2 py-0.5 rounded shadow">เปลี่ยนรูปปก</span>
+                        </div>
+
                         <!-- Cheat Dot indicator (Premium) -->
                         ${g.has_cheats ? `
                             <div class="absolute top-2 left-2 flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-500/30" title="มีสูตรโกง">
@@ -804,24 +982,42 @@
                         ` : ''}
                     </div>
 
-                    <div class="p-2.5 flex-1 flex flex-col justify-between gap-1">
+                    <div class="p-2.5 flex-1 flex flex-col justify-between gap-1.5">
                         <div>
-                            <div class="text-xs font-semibold text-slate-100 truncate">${escapeHtml(g.display_name)}</div>
-                            <div class="text-[10px] text-slate-500 font-mono truncate">${escapeHtml(g.filename)}</div>
+                            <!-- Clickable Title to Rename (Requirement 2) -->
+                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1 hover:text-indigo-400 transition">
+                                <div class="text-xs font-semibold text-slate-100 group-hover/title:text-indigo-400 truncate flex-1">${safeDisplayName}</div>
+                                <i class="fa-solid fa-pen text-[9px] text-slate-500 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-400 shrink-0"></i>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono truncate">${safeFilename}</div>
                         </div>
 
+                        <!-- Card Actions Toolbar (Requirement 2) -->
                         <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/60 mt-1">
-                            <span class="font-mono bg-slate-800 px-1.5 py-0.5 rounded">${g.size_str}</span>
+                            <span class="font-mono bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300">${g.size_str}</span>
                             <div class="flex items-center gap-1">
-                                <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="โหลด ROM" class="text-slate-400 hover:text-emerald-400 p-1">
+                                <!-- Change Cover Button -->
+                                <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="text-slate-400 hover:text-indigo-400 p-1 transition">
+                                    <i class="fa-regular fa-image"></i>
+                                </button>
+                                <!-- Rename Game Button -->
+                                <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="text-slate-400 hover:text-amber-400 p-1 transition">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <!-- Download ROM -->
+                                <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลด ROM" class="text-slate-400 hover:text-emerald-400 p-1 transition">
                                     <i class="fa-solid fa-download"></i>
                                 </a>
+                                <!-- Delete Game -->
+                                <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="text-slate-400 hover:text-rose-400 p-1 transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
                                 ${g.has_save ? `
-                                <a href="/api/download_save?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลดเซฟ" class="text-amber-400 hover:text-amber-300 p-1">
+                                <a href="/api/download_save?token=${encodeURIComponent(g.token)}" download title="ดาวน์โหลดเซฟ" class="text-amber-400 hover:text-amber-300 p-1 transition">
                                     <i class="fa-solid fa-floppy-disk"></i>
                                 </a>` : ''}
                                 ${g.has_cheats ? `
-                                <button onclick="openCheatModal('${g.token}')" title="จัดการสูตรโกง" class="text-emerald-400 hover:text-emerald-300 p-1">
+                                <button onclick="openCheatModal('${g.token}')" title="จัดการสูตรโกง" class="text-emerald-400 hover:text-emerald-300 p-1 transition">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                                 </button>` : ''}
                             </div>
@@ -833,29 +1029,273 @@
 
         function renderGameRow(g, idx) {
             const coverUrl = g.has_cover ? `/api/image?token=${encodeURIComponent(g.token)}` : '';
+            const safeDisplayName = escapeHtml(g.display_name);
+            const safeFilename = escapeHtml(g.filename);
+            const escapedJsName = safeDisplayName.replace(/'/g, "\\'");
+
             return `
                 <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-9 h-11 bg-slate-950 rounded flex items-center justify-center overflow-hidden shrink-0 border border-slate-800">
+                        <!-- Clickable Cover Thumbnail -->
+                        <div onclick="openCoverModal('${g.token}')" title="คลิกเพื่อแก้ไขรูปปก" class="w-10 h-12 bg-slate-950 rounded flex items-center justify-center overflow-hidden shrink-0 border border-slate-800 cursor-pointer relative group/rowcover">
                             ${g.has_cover ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain">` : `<i class="fa-solid fa-image text-slate-700 text-xs"></i>`}
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/rowcover:opacity-100 transition flex items-center justify-center text-white">
+                                <i class="fa-solid fa-camera text-xs text-indigo-400"></i>
+                            </div>
                         </div>
                         <div class="min-w-0">
-                            <div class="text-xs font-semibold text-slate-200 truncate flex items-center gap-2">
-                                <span>${escapeHtml(g.display_name)}</span>
+                            <!-- Clickable Title to Rename -->
+                            <div onclick="openRenameModal('${g.token}')" title="คลิกเพื่อเปลี่ยนชื่อเกม" class="cursor-pointer group/title flex items-center gap-1.5 hover:text-indigo-400 transition">
+                                <span class="text-xs font-semibold text-slate-200 group-hover/title:text-indigo-400 truncate">${safeDisplayName}</span>
+                                <i class="fa-solid fa-pen text-[9px] text-slate-500 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-400 shrink-0"></i>
                                 ${g.has_cheats ? `<span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">สูตร</span>` : ''}
                             </div>
-                            <div class="text-[10px] text-slate-500 font-mono truncate">${escapeHtml(g.filename)}</div>
+                            <div class="text-[10px] text-slate-500 font-mono truncate">${safeFilename}</div>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">${g.size_str}</span>
-                        <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download class="p-1.5 text-slate-400 hover:text-emerald-400"><i class="fa-solid fa-download"></i></a>
-                        ${g.has_save ? `<a href="/api/download_save?token=${encodeURIComponent(g.token)}" download class="p-1.5 text-amber-400 hover:text-amber-300"><i class="fa-solid fa-floppy-disk"></i></a>` : ''}
-                        ${g.has_cheats ? `<button onclick="openCheatModal('${g.token}')" class="p-1.5 text-emerald-400 hover:text-emerald-300"><i class="fa-solid fa-wand-magic-sparkles"></i></button>` : ''}
+                        <!-- Change Cover Button -->
+                        <button onclick="openCoverModal('${g.token}')" title="เปลี่ยนรูปปก" class="p-1.5 text-slate-400 hover:text-indigo-400 transition"><i class="fa-regular fa-image"></i></button>
+                        <!-- Rename Game Button -->
+                        <button onclick="openRenameModal('${g.token}')" title="เปลี่ยนชื่อเกม" class="p-1.5 text-slate-400 hover:text-amber-400 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <!-- Download ROM -->
+                        <a href="/api/download_rom?token=${encodeURIComponent(g.token)}" download title="โหลด ROM" class="p-1.5 text-slate-400 hover:text-emerald-400 transition"><i class="fa-solid fa-download"></i></a>
+                        <!-- Delete Game -->
+                        <button onclick="confirmDeleteGame('${g.token}', '${escapedJsName}')" title="ลบเกม" class="p-1.5 text-slate-400 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button>
+                        ${g.has_save ? `<a href="/api/download_save?token=${encodeURIComponent(g.token)}" download title="โหลดเซฟ" class="p-1.5 text-amber-400 hover:text-amber-300 transition"><i class="fa-solid fa-floppy-disk"></i></a>` : ''}
+                        ${g.has_cheats ? `<button onclick="openCheatModal('${g.token}')" title="จัดการสูตร" class="p-1.5 text-emerald-400 hover:text-emerald-300 transition"><i class="fa-solid fa-wand-magic-sparkles"></i></button>` : ''}
                     </div>
                 </div>
             `;
+        }
+
+        // ================= Rename Modal Functions (Requirement 2) =================
+        function openRenameModal(token) {
+            const game = state.games.find(g => g.token === token);
+            if (!game) return;
+            state.renameToken = token;
+            document.getElementById('renameModalFilename').innerText = game.filename;
+            document.getElementById('renameInput').value = game.display_name;
+            document.getElementById('renameModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('renameInput').focus(), 100);
+        }
+
+        function closeRenameModal() {
+            document.getElementById('renameModal').classList.add('hidden');
+            state.renameToken = null;
+        }
+
+        async function submitRename() {
+            const token = state.renameToken;
+            const newName = document.getElementById('renameInput').value.trim();
+            if (!token || !newName) return;
+
+            try {
+                const res = await fetch('/api/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, new_name: newName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('เปลี่ยนชื่อเกมเรียบร้อยแล้ว');
+                    const game = state.games.find(g => g.token === token);
+                    if (game) game.display_name = newName;
+                    renderGames(state.games);
+                    closeRenameModal();
+                } else {
+                    showToast('เปลี่ยนชื่อไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('เปลี่ยนชื่อไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        // ================= Cover Modal Functions (Requirement 2) =================
+        function openCoverModal(token) {
+            const game = state.games.find(g => g.token === token);
+            if (!game) return;
+            state.coverToken = token;
+            state.customCoverFile = null;
+            document.getElementById('coverModalGameTitle').innerText = `${game.display_name} (${game.filename})`;
+            document.getElementById('coverSearchInput').value = cleanGameTitle(game.display_name) || cleanGameTitle(game.filename);
+            document.getElementById('coverFileInput').value = '';
+            document.getElementById('customCoverPreviewContainer').classList.add('hidden');
+            switchCoverTab('scraper');
+            document.getElementById('coverModal').classList.remove('hidden');
+            searchCoversOnline();
+        }
+
+        function closeCoverModal() {
+            document.getElementById('coverModal').classList.add('hidden');
+            state.coverToken = null;
+            state.customCoverFile = null;
+        }
+
+        function switchCoverTab(tab) {
+            state.coverActiveTab = tab;
+            const sTab = document.getElementById('coverTabScraper');
+            const uTab = document.getElementById('coverTabUpload');
+            const sBtn = document.getElementById('coverTabScraperBtn');
+            const uBtn = document.getElementById('coverTabUploadBtn');
+
+            if (tab === 'scraper') {
+                sTab.classList.remove('hidden');
+                uTab.classList.add('hidden');
+                sBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5 transition';
+                uBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-1.5 transition';
+            } else {
+                sTab.classList.add('hidden');
+                uTab.classList.remove('hidden');
+                uBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5 transition';
+                sBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-1.5 transition';
+            }
+        }
+
+        async function searchCoversOnline() {
+            const q = document.getElementById('coverSearchInput').value.trim();
+            const container = document.getElementById('coverSearchResults');
+            if (!q) {
+                container.innerHTML = '<div class="col-span-full py-10 text-center text-xs text-slate-500">โปรดพิมพ์ชื่อเกมที่ต้องการค้นหา</div>';
+                return;
+            }
+
+            container.innerHTML = `<div class="col-span-full py-12 text-center text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-400 mb-2"></i><div>กำลังค้นหาปกจาก Libretro...</div></div>`;
+
+            try {
+                const res = await fetch('/api/search_covers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: q, system: state.currentSystem || '' })
+                });
+                const data = await res.json();
+                const results = data.results || [];
+                if (results.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full py-12 text-center text-xs text-slate-500">
+                            <i class="fa-solid fa-image text-3xl mb-2 text-slate-600"></i>
+                            <div>ไม่พบรูปปกตรงกับชื่อนี้ใน Libretro</div>
+                            <div class="text-[11px] text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือใช้แท็บ "อัปโหลดรูปปกเอง" ด้านบน</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = results.map(r => `
+                    <div onclick="applyScrapedCover('${escapeHtml(r.url)}')" class="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-xl p-2 flex flex-col items-center gap-1.5 cursor-pointer transition hover:shadow-lg">
+                        <div class="w-full aspect-[3/4] bg-slate-950 rounded flex items-center justify-center overflow-hidden">
+                            <img src="${escapeHtml(r.url)}" alt="${escapeHtml(r.title)}" loading="lazy" class="w-full h-full object-contain p-0.5 group-hover:scale-105 transition">
+                        </div>
+                        <div class="text-[10px] font-medium text-slate-200 text-center truncate w-full" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</div>
+                        <div class="absolute inset-0 bg-indigo-600/85 rounded-xl opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-semibold shadow">
+                            <span><i class="fa-solid fa-check mr-1"></i>เลือกปกนี้</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-400">ค้นหาล้มเหลว: ${err.message}</div>`;
+            }
+        }
+
+        async function applyScrapedCover(imageUrl) {
+            const token = state.coverToken;
+            if (!token || !imageUrl) return;
+
+            showToast('กำลังดาวน์โหลดและตั้งค่าปก...');
+            try {
+                const res = await fetch('/api/apply_cover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, image_url: imageUrl })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('บันทึกรูปปกเกมเรียบร้อยแล้ว');
+                    const game = state.games.find(g => g.token === token);
+                    if (game) game.has_cover = true;
+                    closeCoverModal();
+                    selectSystem(state.currentSystem);
+                } else {
+                    showToast('บันทึกปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('บันทึกปกไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        function previewCustomCover(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            state.customCoverFile = file;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('customCoverPreview').src = evt.target.result;
+                document.getElementById('customCoverFilename').innerText = file.name;
+                document.getElementById('customCoverFilesize').innerText = (file.size / 1024).toFixed(1) + ' KB';
+                document.getElementById('customCoverPreviewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function submitCustomCoverUpload() {
+            const token = state.coverToken;
+            const file = state.customCoverFile;
+            if (!token || !file) {
+                showToast('กรุณาเลือกไฟล์ภาพก่อนบันทึก', false);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('token', token);
+            formData.append('file', file);
+
+            showToast('กำลังอัปโหลดรูปปก...');
+            try {
+                const res = await fetch('/api/upload_cover', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('อัปโหลดรูปปกเกมเรียบร้อยแล้ว');
+                    const game = state.games.find(g => g.token === token);
+                    if (game) game.has_cover = true;
+                    closeCoverModal();
+                    selectSystem(state.currentSystem);
+                } else {
+                    showToast('อัปโหลดปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('อัปโหลดปกไม่สำเร็จ: ' + err.message, false);
+            }
+        }
+
+        // ================= Delete Game Function (Requirement 2) =================
+        async function confirmDeleteGame(token, displayName) {
+            if (!confirm(`คุณต้องการลบเกม "${displayName}" ใช่หรือไม่?\n(ระบบจะลบทั้งไฟล์ ROM และรูปปก และไม่สามารถกู้คืนได้)`)) return;
+
+            try {
+                const res = await fetch('/api/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`ลบเกม "${displayName}" สำเร็จ`);
+                    state.games = state.games.filter(g => g.token !== token);
+                    document.getElementById('currentSysGameCount').innerText = `${state.games.length} เกม`;
+                    renderGames(state.games);
+                    loadStatus();
+                } else {
+                    showToast('ลบเกมไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
+                }
+            } catch (err) {
+                showToast('ลบเกมไม่สำเร็จ: ' + err.message, false);
+            }
         }
 
         function filterGames() {
@@ -1065,7 +1505,7 @@
             }
         }
 
-        // ================= Multi-ROM & Folder Uploader =================
+        // ================= Multi-ROM & Folder Uploader (Section 6.3 & 6.4) =================
         function openUploadModal() {
             document.getElementById('uploadModal').classList.remove('hidden');
             resetUploadQueue();
@@ -1081,10 +1521,15 @@
             document.getElementById('uploadSelectZone').classList.remove('hidden');
             document.getElementById('uploadReviewZone').classList.add('hidden');
             document.getElementById('uploadProgressContainer').classList.add('hidden');
+            const multiIn = document.getElementById('multiFileInput');
+            const folderIn = document.getElementById('folderInput');
+            if (multiIn) multiIn.value = '';
+            if (folderIn) folderIn.value = '';
         }
 
         function initDragAndDrop() {
             const dropArea = document.getElementById('dropArea');
+            if (!dropArea) return;
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
                 dropArea.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
             });
@@ -1098,36 +1543,58 @@
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
 
-            // Group files: single files vs PS1 files
             files.forEach(f => {
-                state.uploadQueue.push({
+                const detectedSys = detectSystemByExt(f.name);
+                const item = {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
                     file: f,
                     name: f.name,
+                    displayName: cleanGameTitle(f.name) || f.name,
                     size: f.size,
                     is_folder: false,
-                    system: detectSystemByExt(f.name)
-                });
+                    folder_name: null,
+                    system: detectedSys,
+                    applied: true,
+                    coverOption: 'auto', // 'auto' | 'custom' | 'none'
+                    coverUrl: null,
+                    coverPreview: null,
+                    customCoverFile: null,
+                    coverLoading: false,
+                    uploadStatus: 'pending' // 'pending' | 'uploading' | 'success' | 'error'
+                };
+                state.uploadQueue.push(item);
             });
             showReviewZone();
+            autoFetchCoversForQueue();
         }
 
         function handleFolderSelected(e) {
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
 
-            // In webkitdirectory, files have relative path: "Folder Name/file.bin"
             const folderName = files[0].webkitRelativePath ? files[0].webkitRelativePath.split('/')[0] : 'PS1_Game';
             files.forEach(f => {
-                state.uploadQueue.push({
+                const item = {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
                     file: f,
                     name: f.name,
+                    displayName: folderName,
                     size: f.size,
                     is_folder: true,
                     folder_name: folderName,
-                    system: 'psx'
-                });
+                    system: 'psx',
+                    applied: true,
+                    coverOption: 'auto',
+                    coverUrl: null,
+                    coverPreview: null,
+                    customCoverFile: null,
+                    coverLoading: false,
+                    uploadStatus: 'pending'
+                };
+                state.uploadQueue.push(item);
             });
             showReviewZone();
+            autoFetchCoversForQueue();
         }
 
         function detectSystemByExt(name) {
@@ -1141,68 +1608,329 @@
             return map[ext] || (state.currentSystem || 'gba');
         }
 
+        // Section 6.3: Review Zone grouped by System Section
         function showReviewZone() {
             document.getElementById('uploadSelectZone').classList.add('hidden');
             document.getElementById('uploadReviewZone').classList.remove('hidden');
+
+            const totalBytes = state.uploadQueue.reduce((acc, i) => acc + (i.applied ? i.size : 0), 0);
+            const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
+            const appliedCount = state.uploadQueue.filter(i => i.applied).length;
+
             document.getElementById('queueCount').innerText = state.uploadQueue.length;
+            document.getElementById('queueTotalBytes').innerText = `${totalMB} MB`;
+            document.getElementById('btnUploadCount').innerText = appliedCount;
+            document.getElementById('btnUploadBytes').innerText = `${totalMB} MB`;
+
+            // Group by system
+            const groups = {};
+            state.uploadQueue.forEach(item => {
+                const sys = item.system || 'gba';
+                if (!groups[sys]) groups[sys] = [];
+                groups[sys].push(item);
+            });
 
             const reviewList = document.getElementById('reviewList');
-            reviewList.innerHTML = state.uploadQueue.map((item, idx) => `
-                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
-                    <div class="min-w-0">
-                        <div class="font-semibold text-slate-200 truncate">${escapeHtml(item.name)}</div>
-                        <div class="text-[10px] text-slate-500 font-mono">ระบบ: ${item.system.toUpperCase()} • ${(item.size / (1024*1024)).toFixed(1)} MB ${item.is_folder ? `(ในโฟลเดอร์ ${item.folder_name})` : ''}</div>
+            const groupKeys = Object.keys(groups);
+
+            if (groupKeys.length === 0) {
+                reviewList.innerHTML = `<div class="py-12 text-center text-xs text-slate-500">ไม่มีรายการในคิว</div>`;
+                return;
+            }
+
+            reviewList.innerHTML = groupKeys.map(sysKey => {
+                const items = groups[sysKey];
+                const sysTitle = getSystemTitle(sysKey);
+                const allAppliedInGroup = items.every(i => i.applied);
+
+                return `
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow">
+                        <!-- Section Header (Section 6.3) -->
+                        <div class="bg-slate-800/80 px-3.5 py-2.5 flex items-center justify-between border-b border-slate-700/60">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-gamepad text-indigo-400 text-xs"></i>
+                                <span class="font-bold text-xs text-slate-200">${sysTitle}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">${items.length} เกม</span>
+                            </div>
+                            <button type="button" onclick="toggleSectionApply('${sysKey}', ${!allAppliedInGroup})" class="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline">
+                                ${allAppliedInGroup ? 'ปลดทั้งหมดในระบบนี้' : 'เลือกทั้งหมดในระบบนี้'}
+                            </button>
+                        </div>
+
+                        <!-- Games in this system section -->
+                        <div class="divide-y divide-slate-800/80">
+                            ${items.map(item => renderQueueItemRow(item)).join('')}
+                        </div>
                     </div>
-                    <button onclick="removeQueueItem(${idx})" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function removeQueueItem(idx) {
-            state.uploadQueue.splice(idx, 1);
+        function renderQueueItemRow(item) {
+            const sizeMB = (item.size / (1024 * 1024)).toFixed(1);
+            let statusBadge = '';
+            if (item.uploadStatus === 'uploading') {
+                statusBadge = `<span class="text-[10px] text-amber-400 flex items-center gap-1 font-mono"><i class="fa-solid fa-spinner fa-spin"></i> กำลังส่ง...</span>`;
+            } else if (item.uploadStatus === 'success') {
+                statusBadge = `<span class="text-[10px] text-emerald-400 flex items-center gap-1 font-mono"><i class="fa-solid fa-check"></i> สำเร็จ</span>`;
+            } else if (item.uploadStatus === 'error') {
+                statusBadge = `<span class="text-[10px] text-rose-400 flex items-center gap-1 font-mono"><i class="fa-solid fa-xmark"></i> ผิดพลาด</span>`;
+            } else {
+                statusBadge = item.applied 
+                    ? `<span class="text-[10px] text-indigo-300 font-mono">พร้อมส่ง ✓</span>`
+                    : `<span class="text-[10px] text-slate-500 font-mono">ข้าม</span>`;
+            }
+
+            return `
+                <div class="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${item.applied ? 'bg-slate-900/40' : 'bg-slate-950/60 opacity-60'}">
+                    <!-- Left: Checkbox & Name -->
+                    <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                        <input type="checkbox" ${item.applied ? 'checked' : ''} onchange="toggleItemApply('${item.id}', this.checked)" class="w-4 h-4 mt-1 rounded text-indigo-600 focus:ring-0 cursor-pointer">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${escapeHtml(item.displayName)}" onchange="updateItemDisplayName('${item.id}', this.value)" class="bg-slate-950 border border-slate-700/80 rounded px-2 py-0.5 text-xs text-white font-medium focus:border-indigo-500 w-full sm:max-w-xs" placeholder="ชื่อเกม">
+                            </div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                                ${escapeHtml(item.name)} • ${sizeMB} MB ${item.is_folder ? `(โฟลเดอร์ PS1: ${item.folder_name})` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Middle: Cover Selector (Section 6.3) -->
+                    <div class="flex items-center gap-2.5 shrink-0 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        <!-- Cover Preview Thumbnail -->
+                        <div class="w-9 h-11 bg-slate-900 rounded overflow-hidden flex items-center justify-center shrink-0 border border-slate-700">
+                            ${item.coverPreview ? `
+                                <img src="${item.coverPreview}" class="w-full h-full object-contain">
+                            ` : item.coverLoading ? `
+                                <i class="fa-solid fa-spinner fa-spin text-indigo-400 text-xs"></i>
+                            ` : `
+                                <i class="fa-regular fa-image text-slate-600 text-xs"></i>
+                            `}
+                        </div>
+
+                        <!-- Cover Options -->
+                        <div class="flex flex-col gap-1 text-[11px]">
+                            <div class="flex items-center gap-2">
+                                <label class="flex items-center gap-1 cursor-pointer">
+                                    <input type="radio" name="cover_opt_${item.id}" value="auto" ${item.coverOption === 'auto' ? 'checked' : ''} onchange="setQueueCoverOption('${item.id}', 'auto')" class="text-indigo-600 text-xs">
+                                    <span class="text-slate-300">ปก Libretro (อัตโนมัติ)</span>
+                                </label>
+                                ${item.coverUrl ? `<span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">พบปก ✓</span>` : ''}
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <label class="flex items-center gap-1 cursor-pointer">
+                                    <input type="radio" name="cover_opt_${item.id}" value="custom" ${item.coverOption === 'custom' ? 'checked' : ''} onchange="setQueueCoverOption('${item.id}', 'custom')" class="text-indigo-600 text-xs">
+                                    <span class="text-slate-300">อัปโหลดปกเอง (ม็อดไทย)</span>
+                                </label>
+                                <button type="button" onclick="document.getElementById('file_cov_${item.id}').click()" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                                    <i class="fa-solid fa-folder-open mr-1"></i>เลือกรูป
+                                </button>
+                                <input type="file" id="file_cov_${item.id}" accept="image/*" class="hidden" onchange="handleQueueCustomCover('${item.id}', event)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Status & Remove -->
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        ${statusBadge}
+                        <button type="button" onclick="removeQueueItem('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function autoFetchCoversForQueue() {
+            for (const item of state.uploadQueue) {
+                if (item.coverOption === 'auto' && !item.coverUrl && !item.coverLoading) {
+                    item.coverLoading = true;
+                    try {
+                        const res = await fetch('/api/search_covers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ query: item.displayName || item.name, system: item.system })
+                        });
+                        const data = await res.json();
+                        if (data.results && data.results.length > 0) {
+                            item.coverUrl = data.results[0].url;
+                            item.coverPreview = data.results[0].url;
+                        }
+                    } catch (e) {
+                        console.error("Cover auto search error:", e);
+                    } finally {
+                        item.coverLoading = false;
+                        showReviewZone();
+                    }
+                }
+            }
+        }
+
+        function toggleItemApply(id, checked) {
+            const item = state.uploadQueue.find(i => i.id === id);
+            if (item) {
+                item.applied = checked;
+                showReviewZone();
+            }
+        }
+
+        function toggleSectionApply(sysKey, checked) {
+            state.uploadQueue.forEach(item => {
+                if (item.system === sysKey) item.applied = checked;
+            });
+            showReviewZone();
+        }
+
+        function toggleAllQueueItems(checked) {
+            state.uploadQueue.forEach(item => {
+                item.applied = checked;
+            });
+            showReviewZone();
+        }
+
+        function updateItemDisplayName(id, newName) {
+            const item = state.uploadQueue.find(i => i.id === id);
+            if (item && newName.trim()) {
+                item.displayName = newName.trim();
+            }
+        }
+
+        function setQueueCoverOption(id, opt) {
+            const item = state.uploadQueue.find(i => i.id === id);
+            if (item) {
+                item.coverOption = opt;
+                if (opt === 'none') {
+                    item.coverPreview = null;
+                } else if (opt === 'auto' && item.coverUrl) {
+                    item.coverPreview = item.coverUrl;
+                }
+                showReviewZone();
+            }
+        }
+
+        function handleQueueCustomCover(id, e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const item = state.uploadQueue.find(i => i.id === id);
+            if (item) {
+                item.coverOption = 'custom';
+                item.customCoverFile = file;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    item.coverPreview = evt.target.result;
+                    showReviewZone();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeQueueItem(id) {
+            state.uploadQueue = state.uploadQueue.filter(i => i.id !== id);
             if (state.uploadQueue.length === 0) resetUploadQueue();
             else showReviewZone();
         }
 
+        // Section 6.4: Real-time byte progress bar with XHR
         async function startBatchUpload() {
-            if (state.uploadQueue.length === 0) return;
+            const appliedItems = state.uploadQueue.filter(i => i.applied);
+            if (appliedItems.length === 0) {
+                showToast('กรุณาเลือกอย่างน้อย 1 รายการเพื่ออัปโหลด', false);
+                return;
+            }
+
             const btn = document.getElementById('btnStartBatchUpload');
             btn.disabled = true;
             document.getElementById('uploadProgressContainer').classList.remove('hidden');
 
-            const total = state.uploadQueue.length;
+            const totalBytesAll = appliedItems.reduce((acc, i) => acc + i.size, 0);
+            let uploadedBytesBefore = 0;
             let successCount = 0;
 
-            for (let i = 0; i < total; i++) {
-                const item = state.uploadQueue[i];
-                document.getElementById('uploadStatusText').innerText = `กำลังส่ง ${item.name} (${i+1}/${total})...`;
-                const percent = Math.round(((i) / total) * 100);
-                document.getElementById('uploadPercentText').innerText = `${percent}%`;
-                document.getElementById('uploadProgressBar').style.width = `${percent}%`;
+            for (let i = 0; i < appliedItems.length; i++) {
+                const item = appliedItems[i];
+                item.uploadStatus = 'uploading';
+                showReviewZone();
+
+                document.getElementById('uploadStatusText').innerHTML = `
+                    <i class="fa-solid fa-spinner fa-spin text-indigo-400 mr-1.5"></i>
+                    <span>กำลังอัปโหลดเกมที่ ${i+1}/${appliedItems.length}: ${escapeHtml(item.displayName)}...</span>
+                `;
+                document.getElementById('uploadCurrentFileText').innerText = `${item.name} (${(item.size / (1024*1024)).toFixed(1)} MB)`;
 
                 const formData = new FormData();
                 formData.append('file', item.file);
                 formData.append('system', item.system);
+                formData.append('display_name', item.displayName);
                 if (item.is_folder) {
                     formData.append('is_folder', 'true');
                     formData.append('folder_name', item.folder_name);
                 }
 
-                try {
-                    const res = await fetch('/api/upload_rom', { method: 'POST', body: formData });
-                    const data = await res.json();
-                    if (data.success) successCount++;
-                } catch (e) {
-                    console.error("Upload error:", e);
+                // Attach cover if selected
+                if (item.coverOption === 'custom' && item.customCoverFile) {
+                    formData.append('cover_file', item.customCoverFile);
+                } else if (item.coverOption === 'auto' && item.coverUrl) {
+                    formData.append('cover_url', item.coverUrl);
                 }
+
+                // XHR with exact byte progress tracking
+                await new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/upload_rom', true);
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const currentBytes = uploadedBytesBefore + e.loaded;
+                            const percent = Math.min(99, Math.round((currentBytes / totalBytesAll) * 100));
+                            const sentMB = (currentBytes / (1024 * 1024)).toFixed(1);
+                            const totalMB = (totalBytesAll / (1024 * 1024)).toFixed(1);
+
+                            document.getElementById('uploadProgressBar').style.width = `${percent}%`;
+                            document.getElementById('uploadPercentText').innerText = `${percent}%`;
+                            document.getElementById('uploadBytesText').innerText = `${sentMB} / ${totalMB} MB`;
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.success) {
+                                item.uploadStatus = 'success';
+                                successCount++;
+                            } else {
+                                item.uploadStatus = 'error';
+                            }
+                        } catch (err) {
+                            item.uploadStatus = 'error';
+                        }
+                        uploadedBytesBefore += item.size;
+                        resolve();
+                    };
+
+                    xhr.onerror = () => {
+                        item.uploadStatus = 'error';
+                        uploadedBytesBefore += item.size;
+                        resolve();
+                    };
+
+                    xhr.send(formData);
+                });
             }
 
             document.getElementById('uploadPercentText').innerText = `100%`;
             document.getElementById('uploadProgressBar').style.width = `100%`;
-            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} จาก ${total} ไฟล์!`);
-            closeUploadModal();
-            selectSystem(state.currentSystem);
-            loadStatus();
+            document.getElementById('uploadStatusText').innerHTML = `
+                <i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i>
+                <span>อัปโหลดเสร็จสิ้นทั้งหมด ${successCount} จาก ${appliedItems.length} เกม!</span>
+            `;
+
+            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} เกม!`);
+            setTimeout(() => {
+                closeUploadModal();
+                btn.disabled = false;
+                selectSystem(state.currentSystem || (appliedItems[0] ? appliedItems[0].system : 'gba'));
+                loadStatus();
+            }, 1200);
         }
 
         // ================= Theme Switcher (Premium) =================

@@ -399,9 +399,26 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
                 }
                 system_id = auto_map.get(ext, 'gba')
 
+            # Cover support: check if cover_file or cover_url was provided
+            cover_part = parts.get('cover_file')
+            cover_url = parts.get('cover_url', {}).get('data', b'').decode('utf-8').strip()
+            cover_bytes = None
+            cover_ext = ".png"
+
+            if cover_part and cover_part.get('data'):
+                cover_bytes = cover_part['data']
+                if cover_part.get('filename'):
+                    cover_ext = os.path.splitext(cover_part['filename'])[1].lower() or ".png"
+            elif cover_url:
+                try:
+                    cover_bytes = scraper.download_image_bytes(cover_url)
+                except Exception:
+                    cover_bytes = None
+
             res = self.server.game_mgr.save_uploaded_rom(
                 system_id, filename, file_part['data'],
-                display_name=display_name, is_folder=is_folder, folder_name=folder_name
+                display_name=display_name, is_folder=is_folder, folder_name=folder_name,
+                cover_bytes=cover_bytes, cover_ext=cover_ext
             )
             return self.send_json(res)
 

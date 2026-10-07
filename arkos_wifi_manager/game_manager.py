@@ -90,9 +90,10 @@ class ArkOSGameManager:
 
     def _detect_roms_root(self, preferred_path=None):
         """Auto-detect ArkOS ROMs directory across SD1 and SD2."""
-        candidates = []
         if preferred_path and os.path.exists(preferred_path):
-            candidates.append(preferred_path)
+            return os.path.abspath(preferred_path)
+
+        candidates = []
 
         candidates.extend([
             "/roms2",                     # ArkOS SD Slot 2 (Dual SD setup)
@@ -540,7 +541,7 @@ class ArkOSGameManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def save_uploaded_rom(self, system_id, filename, file_bytes, display_name=None, is_folder=False, folder_name=None):
+    def save_uploaded_rom(self, system_id, filename, file_bytes, display_name=None, is_folder=False, folder_name=None, cover_bytes=None, cover_ext=".png"):
         """Save newly uploaded ROM file into system directory and update gamelist.xml."""
         sys_path = os.path.join(self.roms_root, system_id)
         if not os.path.exists(sys_path):
@@ -570,21 +571,38 @@ class ArkOSGameManager:
 
             target_path = f"./{entry_name}".lower()
             found = False
+            target_elem = None
             for g_elem in root.findall('game'):
                 p = g_elem.find('path')
                 if p is not None and p.text and p.text.strip().lower() == target_path:
                     found = True
+                    target_elem = g_elem
                     n = g_elem.find('name')
                     if n is not None:
                         n.text = clean_display
                     break
 
             if not found:
-                g_elem = ET.SubElement(root, 'game')
-                p = ET.SubElement(g_elem, 'path')
+                target_elem = ET.SubElement(root, 'game')
+                p = ET.SubElement(target_elem, 'path')
                 p.text = f"./{entry_name}"
-                n = ET.SubElement(g_elem, 'name')
+                n = ET.SubElement(target_elem, 'name')
                 n.text = clean_display
+
+            # If cover bytes provided, save cover image and link in XML
+            if cover_bytes:
+                images_dir = os.path.join(sys_path, "images")
+                os.makedirs(images_dir, exist_ok=True)
+                base_name = os.path.splitext(entry_name)[0]
+                cover_filename = f"{base_name}-image{cover_ext}"
+                cover_abs_path = os.path.join(images_dir, cover_filename)
+                with open(cover_abs_path, 'wb') as cf:
+                    cf.write(cover_bytes)
+
+                img_elem = target_elem.find('image')
+                if img_elem is None:
+                    img_elem = ET.SubElement(target_elem, 'image')
+                img_elem.text = f"./images/{cover_filename}"
 
             tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
             self._clear_cache_for_system(system_id)
