@@ -663,7 +663,7 @@ class ArkOSGameManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def save_uploaded_rom(self, system_id, filename, file_bytes, display_name=None, is_folder=False, folder_name=None, cover_bytes=None, cover_ext=".png"):
+    def save_uploaded_rom(self, system_id, filename, file_bytes=None, display_name=None, is_folder=False, folder_name=None, cover_bytes=None, cover_ext=".png", temp_file_path=None):
         """Save newly uploaded ROM file into system directory and update gamelist.xml."""
         sys_path = os.path.join(self.roms_root, system_id)
         if not os.path.exists(sys_path):
@@ -679,8 +679,14 @@ class ArkOSGameManager:
             entry_name = filename
 
         try:
-            with open(target_file_path, 'wb') as f:
-                f.write(file_bytes)
+            if temp_file_path and os.path.exists(temp_file_path):
+                # Efficient move across filesystem (instant atomic rename, 0 RAM usage)
+                shutil.move(temp_file_path, target_file_path)
+            elif file_bytes is not None:
+                with open(target_file_path, 'wb') as f:
+                    f.write(file_bytes)
+            else:
+                return {"success": False, "error": "No ROM file data provided"}
 
             clean_display = display_name if (display_name and display_name.strip()) else os.path.splitext(entry_name)[0]
             gamelist_path = os.path.join(sys_path, "gamelist.xml")

@@ -55,34 +55,76 @@ def clean_game_title(title: str) -> str:
     t = re.sub(r'\s+', ' ', t).strip()
     return t
 
+def normalize_text(s: str) -> str:
+    """Normalize text by stripping quotes, hyphens, and punctuation for fuzzy matching."""
+    s = re.sub(r"['\"`\.\-_,:;!?/]", " ", s)
+    return re.sub(r"\s+", " ", s).strip().lower()
+
 def get_system_boxart_list(repo_name: str) -> List[str]:
-    """Gets list of all available box arts in a Libretro repo (with local JSON caching)."""
+    """Gets list of all available box arts in a Libretro repo (with local JSON caching & 2-step GitHub lookup)."""
     cache_file = os.path.join(CACHE_DIR, f"{repo_name}.json")
     if os.path.exists(cache_file):
         try:
             with open(cache_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                cached = json.load(f)
+                if cached and isinstance(cached, list):
+                    return cached
         except Exception:
             pass
 
-    # Fetch from GitHub API using urllib
-    url = f"https://api.github.com/repos/libretro-thumbnails/{repo_name}/git/trees/master?recursive=1"
-    req = urllib.request.Request(url, headers={'User-Agent': 'ArkOS-WiFi-Manager/2.0'})
+    headers = {'User-Agent': 'ArkOS-WiFi-Manager/2.0'}
+
+    # Strategy 1: 2-step tree lookup (Works reliably on massive repos like Sony_-_PlayStation without HTTP 500)
     try:
-        with urllib.request.urlopen(req, timeout=8) as response:
+        root_url = f"https://api.github.com/repos/libretro-thumbnails/{repo_name}/git/trees/master"
+        req = urllib.request.Request(root_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                root_data = json.loads(response.read().decode('utf-8'))
+                boxarts_sha = None
+                for item in root_data.get('tree', []):
+                    if item.get('path') == 'Named_Boxarts' and item.get('type') == 'tree':
+                        boxarts_sha = item.get('sha')
+                        break
+
+                if boxarts_sha:
+                    sub_url = f"https://api.github.com/repos/libretro-thumbnails/{repo_name}/git/trees/{boxarts_sha}"
+                    sub_req = urllib.request.Request(sub_url, headers=headers)
+                    with urllib.request.urlopen(sub_req, timeout=12) as sub_resp:
+                        if sub_resp.status == 200:
+                            sub_data = json.loads(sub_resp.read().decode('utf-8'))
+                            boxarts = [
+                                item['path']
+                                for item in sub_data.get('tree', [])
+                                if item.get('path', '').endswith('.png')
+                            ]
+                            if boxarts:
+                                with open(cache_file, 'w', encoding='utf-8') as f:
+                                    json.dump(boxarts, f, ensure_ascii=False)
+                                return boxarts
+    except Exception as e:
+        print(f"[Scraper] 2-step tree lookup failed for {repo_name}: {e}")
+
+    # Strategy 2: Recursive lookup fallback for smaller repos
+    try:
+        url = f"https://api.github.com/repos/libretro-thumbnails/{repo_name}/git/trees/master?recursive=1"
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode('utf-8'))
                 tree = data.get('tree', [])
                 boxarts = [
                     item['path'].replace('Named_Boxarts/', '')
                     for item in tree
-                    if item['path'].startswith('Named_Boxarts/') and item['path'].endswith('.png')
+                    if item.get('path', '').startswith('Named_Boxarts/') and item.get('path', '').endswith('.png')
                 ]
-                with open(cache_file, 'w', encoding='utf-8') as f:
-                    json.dump(boxarts, f, ensure_ascii=False)
-                return boxarts
+                if boxarts:
+                    with open(cache_file, 'w', encoding='utf-8') as f:
+                        json.dump(boxarts, f, ensure_ascii=False)
+                    return boxarts
     except Exception as e:
-        print(f"[Scraper] Error fetching repo list for {repo_name}: {e}")
+        print(f"[Scraper] Recursive lookup failed for {repo_name}: {e}")
+
     return []
 
 def search_box_arts(query: str, system_id: str = "") -> List[Dict[str, str]]:
@@ -90,8 +132,9 @@ def search_box_arts(query: str, system_id: str = "") -> List[Dict[str, str]]:
     results = []
     repo_name = LIBRETRO_REPOS.get(system_id.lower())
     
-    clean_q = clean_game_title(query).lower()
-    keywords = [k for k in re.split(r'[\s_:-]+', clean_q) if len(k) > 1]
+    clean_q = clean_game_title(query)
+    norm_q = normalize_text(clean_q)
+    keywords = [k for k in norm_q.split() if len(k) > 1]
     
     if not repo_name:
         repo_name = "Nintendo_-_Game_Boy_Advance"
@@ -101,25 +144,34 @@ def search_box_arts(query: str, system_id: str = "") -> List[Dict[str, str]]:
     if boxarts and keywords:
         scored_matches = []
         for filename in boxarts:
-            name_lower = filename.lower()
+            name_no_ext = filename[:-4] if filename.endswith('.png') else filename
+            norm_name = normalize_text(name_no_ext)
             score = 0
-            if clean_q in name_lower:
+
+            # Exact or prefix normalized match
+            if norm_q in norm_name:
                 score += 50
-            matched_words = sum(1 for kw in keywords if kw in name_lower)
+            if norm_name.startswith(norm_q):
+                score += 25
+
+            matched_words = sum(1 for kw in keywords if kw in norm_name)
             if matched_words == len(keywords):
                 score += 30
             elif matched_words > 0:
                 score += matched_words * 5
 
             if score > 0:
-                if '(usa' in name_lower or '(europe' in name_lower:
+                fn_lower = filename.lower()
+                if '(usa' in fn_lower or '(europe' in fn_lower:
                     score += 5
+                if '(japan' in fn_lower and '(japan' not in query.lower():
+                    score -= 2
                 scored_matches.append((score, filename))
 
         scored_matches.sort(key=lambda x: -x[0])
 
-        for score, filename in scored_matches[:16]:
-            clean_display = filename[:-4]
+        for score, filename in scored_matches[:20]:
+            clean_display = filename[:-4] if filename.endswith('.png') else filename
             encoded_path = urllib.parse.quote(filename)
             raw_url = f"https://raw.githubusercontent.com/libretro-thumbnails/{repo_name}/master/Named_Boxarts/{encoded_path}"
             results.append({

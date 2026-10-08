@@ -13,8 +13,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Local test & cache folders
-cache_boxarts/
+# Local test folders
 cache_images/
 scratch/
 mock_roms/

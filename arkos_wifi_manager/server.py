@@ -25,6 +25,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import mimetypes
 import secrets
+import tempfile
 import threading
 import time
 
@@ -60,32 +61,149 @@ def get_local_ip():
         s.close()
     return ip
 
-def parse_multipart(body_bytes, boundary):
-    """Zero-dependency RFC 7578 multipart/form-data parser."""
-    parts = {}
-    boundary_bytes = b"--" + boundary.encode()
-    raw_parts = body_bytes.split(boundary_bytes)
-    for part in raw_parts:
-        if not part or part == b"--\r\n" or part == b"--" or part == b"--\r\n\r\n":
-            continue
-        if b"\r\n\r\n" in part:
-            header_data, content = part.split(b"\r\n\r\n", 1)
-            if content.endswith(b"\r\n"):
-                content = content[:-2]
-            headers = header_data.decode(errors="ignore")
-            name = None
-            filename = None
-            for line in headers.split("\r\n"):
-                if "content-disposition" in line.lower():
-                    for param in line.split(";"):
-                        param = param.strip()
-                        if param.lower().startswith("name="):
-                            name = param.split("=", 1)[1].strip('"\'')
-                        elif param.lower().startswith("filename="):
-                            filename = param.split("=", 1)[1].strip('"\'')
-            if name:
-                parts[name] = {"filename": filename, "data": content}
-    return parts
+def parse_multipart_streaming(rfile, content_length, boundary, temp_dir=None):
+    """
+    Zero-dependency streaming RFC 7578 multipart/form-data parser.
+    Streams large ROM and media files directly to disk chunks (64KB buffer)
+    to completely prevent RAM MemoryError on RK3326 devices (R36S, R36H).
+    """
+    boundary_bytes = boundary.encode('ascii') if isinstance(boundary, str) else boundary
+    delimiter = b"\r\n--" + boundary_bytes
+    initial_boundary = b"--" + boundary_bytes
+
+    remaining = content_length
+    buf = bytearray()
+    CHUNK_SIZE = 65536
+
+    def read_more():
+        nonlocal remaining
+        if remaining <= 0:
+            return 0
+        to_read = min(CHUNK_SIZE, remaining)
+        chunk = rfile.read(to_read)
+        if not chunk:
+            remaining = 0
+            return 0
+        remaining -= len(chunk)
+        buf.extend(chunk)
+        return len(chunk)
+
+    # 1. Read past initial boundary
+    while initial_boundary not in buf:
+        if read_more() == 0:
+            break
+
+    init_idx = buf.find(initial_boundary)
+    if init_idx == -1:
+        return {}
+    del buf[:init_idx + len(initial_boundary)]
+
+    # Skip initial CRLF or trailing --
+    while len(buf) < 2 and read_more() > 0:
+        pass
+    if buf.startswith(b"\r\n"):
+        del buf[:2]
+    elif buf.startswith(b"--"):
+        return {}
+
+    fields = {}
+
+    while True:
+        # Read headers for this part (until \r\n\r\n)
+        while b"\r\n\r\n" not in buf:
+            if read_more() == 0:
+                break
+
+        hdr_idx = buf.find(b"\r\n\r\n")
+        if hdr_idx == -1:
+            break
+
+        header_bytes = bytes(buf[:hdr_idx])
+        del buf[:hdr_idx + 4]
+
+        header_str = header_bytes.decode('utf-8', errors='ignore')
+        name = None
+        filename = None
+        for line in header_str.split('\r\n'):
+            if line.lower().startswith('content-disposition:'):
+                for part in line.split(';'):
+                    part = part.strip()
+                    if part.lower().startswith('name='):
+                        name = part.split('=', 1)[1].strip('"\'')
+                    elif part.lower().startswith('filename='):
+                        filename = part.split('=', 1)[1].strip('"\'')
+
+        if not name:
+            name = f"unknown_{len(fields)}"
+
+        # If this part has a filename or is 'file'/'cover_file', stream directly to disk temp file
+        is_file_part = bool(filename) or (name in ('file', 'cover_file'))
+        delim_len = len(delimiter)
+
+        if is_file_part:
+            fd, tmp_path = tempfile.mkstemp(prefix="upload_", dir=temp_dir)
+            os.close(fd)
+            with open(tmp_path, "wb") as out_f:
+                while True:
+                    delim_pos = buf.find(delimiter)
+                    if delim_pos != -1:
+                        out_f.write(buf[:delim_pos])
+                        del buf[:delim_pos + delim_len]
+                        break
+                    else:
+                        if len(buf) >= delim_len:
+                            safe_len = len(buf) - delim_len + 1
+                            out_f.write(buf[:safe_len])
+                            del buf[:safe_len]
+                        if read_more() == 0:
+                            out_f.write(buf)
+                            buf.clear()
+                            break
+
+            fields[name] = {
+                'filename': filename,
+                'path': tmp_path,
+                'is_file': True
+            }
+        else:
+            val_bytes = bytearray()
+            while True:
+                delim_pos = buf.find(delimiter)
+                if delim_pos != -1:
+                    val_bytes.extend(buf[:delim_pos])
+                    del buf[:delim_pos + delim_len]
+                    break
+                else:
+                    if len(buf) >= delim_len:
+                        safe_len = len(buf) - delim_len + 1
+                        val_bytes.extend(buf[:safe_len])
+                        del buf[:safe_len]
+                    if read_more() == 0:
+                        val_bytes.extend(buf)
+                        buf.clear()
+                        break
+            fields[name] = {
+                'filename': filename,
+                'data': bytes(val_bytes),
+                'value': bytes(val_bytes).decode('utf-8', errors='ignore'),
+                'is_file': False
+            }
+
+        while len(buf) < 2 and read_more() > 0:
+            pass
+        if buf.startswith(b"--"):
+            break
+        elif buf.startswith(b"\r\n"):
+            del buf[:2]
+
+    # Drain any remaining bytes from rfile to keep socket clean
+    while remaining > 0:
+        chunk = rfile.read(min(CHUNK_SIZE, remaining))
+        if not chunk:
+            break
+        remaining -= len(chunk)
+
+    return fields
 
 class ArkOSRequestHandler(BaseHTTPRequestHandler):
     server_version = "RetroGame-SDCard-Manager-WiFi/1.1"
@@ -129,8 +247,8 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(content)
                 return
 
-        # Static assets (such as ads: /ads/ad1.png)
-        if path.startswith('/ads/') or path.startswith('/static/'):
+        # Static assets (such as ads: /ads/ad1.png, mascot: /mascot.png, etc.)
+        if path == '/mascot.png' or path.startswith('/ads/') or path.startswith('/static/'):
             clean_rel = path.lstrip('/')
             local_path = os.path.join(CURRENT_DIR, 'web', clean_rel)
             if os.path.exists(local_path) and os.path.isfile(local_path):
@@ -364,18 +482,29 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
             if 'multipart/form-data' not in content_type:
                 return self.send_json({"success": False, "error": "Expected multipart/form-data"}, 400)
             boundary = content_type.split("boundary=")[1].strip()
-            body_bytes = self.rfile.read(content_length)
-            parts = parse_multipart(body_bytes, boundary)
+            temp_upload_dir = os.path.join(self.server.game_mgr.roms_root, ".tmp_uploads")
+            os.makedirs(temp_upload_dir, exist_ok=True)
+            parts = parse_multipart_streaming(self.rfile, content_length, boundary, temp_dir=temp_upload_dir)
 
-            token = parts.get('token', {}).get('data', b'').decode('utf-8').strip()
+            token = parts.get('token', {}).get('value', '').strip()
             file_part = parts.get('file')
-            if not token or not file_part:
+            if not token or not file_part or not file_part.get('path'):
                 return self.send_json({"success": False, "error": "Missing token or file"}, 400)
 
             orig_filename = file_part.get('filename') or 'cover.png'
             ext = os.path.splitext(orig_filename)[1].lower() or '.png'
-            res = self.server.game_mgr.apply_cover(token, file_part['data'], filename_ext=ext)
-            return self.send_json(res)
+            cover_path = file_part['path']
+            try:
+                with open(cover_path, 'rb') as f:
+                    img_bytes = f.read()
+                res = self.server.game_mgr.apply_cover(token, img_bytes, filename_ext=ext)
+                return self.send_json(res)
+            finally:
+                if os.path.exists(cover_path):
+                    try:
+                        os.remove(cover_path)
+                    except Exception:
+                        pass
 
         # 3. Delete Game via Token (All Tiers)
         if path == '/api/delete':
@@ -390,24 +519,30 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"success": False, "error": str(e)}, 500)
 
-        # 4. Upload ROM File (Multi-file & PS1 folder support, All Tiers)
+        # 4. Upload ROM File (Streaming chunked upload, PS1 folder support, All Tiers)
         if path == '/api/upload_rom':
             if 'multipart/form-data' not in content_type:
                 return self.send_json({"success": False, "error": "Expected multipart/form-data"}, 400)
             boundary = content_type.split("boundary=")[1].strip()
-            body_bytes = self.rfile.read(content_length)
-            parts = parse_multipart(body_bytes, boundary)
+            
+            # Temporary upload directory on SD card partition to prevent tmpfs RAM exhaustion
+            temp_upload_dir = os.path.join(self.server.game_mgr.roms_root, ".tmp_uploads")
+            os.makedirs(temp_upload_dir, exist_ok=True)
 
-            system_id = parts.get('system', {}).get('data', b'').decode('utf-8').strip()
-            display_name = parts.get('display_name', {}).get('data', b'').decode('utf-8').strip()
-            is_folder = parts.get('is_folder', {}).get('data', b'').decode('utf-8').strip().lower() == 'true'
-            folder_name = parts.get('folder_name', {}).get('data', b'').decode('utf-8').strip()
+            parts = parse_multipart_streaming(self.rfile, content_length, boundary, temp_dir=temp_upload_dir)
+
+            system_id = parts.get('system', {}).get('value', '').strip()
+            display_name = parts.get('display_name', {}).get('value', '').strip()
+            is_folder = parts.get('is_folder', {}).get('value', '').strip().lower() == 'true'
+            folder_name = parts.get('folder_name', {}).get('value', '').strip()
             file_part = parts.get('file')
 
-            if not file_part or not file_part.get('filename'):
+            if not file_part or not file_part.get('filename') or not file_part.get('path'):
                 return self.send_json({"success": False, "error": "No ROM file provided"}, 400)
 
             filename = file_part['filename']
+            rom_temp_path = file_part['path']
+
             if not system_id or system_id == 'auto':
                 ext = os.path.splitext(filename)[1].lower()
                 auto_map = {
@@ -420,26 +555,43 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
 
             # Cover support: check if cover_file or cover_url was provided
             cover_part = parts.get('cover_file')
-            cover_url = parts.get('cover_url', {}).get('data', b'').decode('utf-8').strip()
+            cover_url = parts.get('cover_url', {}).get('value', '').strip()
             cover_bytes = None
             cover_ext = ".png"
 
-            if cover_part and cover_part.get('data'):
-                cover_bytes = cover_part['data']
-                if cover_part.get('filename'):
-                    cover_ext = os.path.splitext(cover_part['filename'])[1].lower() or ".png"
+            if cover_part and cover_part.get('path') and os.path.exists(cover_part['path']):
+                try:
+                    with open(cover_part['path'], 'rb') as cf:
+                        cover_bytes = cf.read()
+                    if cover_part.get('filename'):
+                        cover_ext = os.path.splitext(cover_part['filename'])[1].lower() or ".png"
+                finally:
+                    try:
+                        os.remove(cover_part['path'])
+                    except Exception:
+                        pass
             elif cover_url:
                 try:
                     cover_bytes = scraper.download_image_bytes(cover_url)
                 except Exception:
                     cover_bytes = None
 
-            res = self.server.game_mgr.save_uploaded_rom(
-                system_id, filename, file_part['data'],
-                display_name=display_name, is_folder=is_folder, folder_name=folder_name,
-                cover_bytes=cover_bytes, cover_ext=cover_ext
-            )
-            return self.send_json(res)
+            try:
+                res = self.server.game_mgr.save_uploaded_rom(
+                    system_id, filename,
+                    display_name=display_name, is_folder=is_folder, folder_name=folder_name,
+                    cover_bytes=cover_bytes, cover_ext=cover_ext,
+                    temp_file_path=rom_temp_path
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"success": False, "error": str(e)}, 500)
+            finally:
+                if rom_temp_path and os.path.exists(rom_temp_path):
+                    try:
+                        os.remove(rom_temp_path)
+                    except Exception:
+                        pass
 
         # 5. Search Libretro Covers (All Tiers)
         if path == '/api/search_covers':
