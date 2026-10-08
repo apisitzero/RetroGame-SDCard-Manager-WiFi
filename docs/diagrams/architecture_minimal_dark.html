@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArcOS Wi-Fi Manager · Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #2d3142;
+      --color-ink:     #f5f5f5;
+      --color-muted:   #bfc0c0;
+      --color-accent:  #f08a59;
+      --font-sans:     'Geist', 'Prompt', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; min-width: 0; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 2.4vw + 0.75rem, 2.2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Diagram Design (Minimal Dark)</p>
+    <h1>ArcOS Wi-Fi Manager (v1.1) System Topology</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arch-title arch-desc">
+        <title id="arch-title">ArcOS Wi-Fi Manager Architecture</title>
+        <desc id="arch-desc">System architecture of ArcOS Wi-Fi Manager on R36S console, spanning Client SPA, Python Embedded Server, and MicroSD Storage.</desc>
+        
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.08)"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#f08a59"/>
+          </marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#6a95d8"/>
+          </marker>
+        </defs>
+
+        <!-- Background -->
+        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.6"/>
+
+        <!-- ================= Zones (Z-order 1) ================= -->
+        <!-- Zone 1: Client Devices -->
+        <rect x="40" y="80" width="230" height="480" rx="8"
+              fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+        <rect x="70" y="84" width="130" height="13" rx="2" fill="#2d3142"/>
+        <text x="135" y="94" fill="rgba(245,245,245,0.45)" font-size="7.5" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">CLIENT DEVICES (BROWSER)</text>
+
+        <!-- Zone 2: R36S Embedded Host -->
+        <rect x="310" y="50" width="390" height="520" rx="8"
+              fill="rgba(245,245,245,0.025)" stroke="rgba(245,245,245,0.15)" stroke-width="0.8"/>
+        <rect x="375" y="54" width="260" height="13" rx="2" fill="#2d3142"/>
+        <text x="505" y="64" fill="rgba(245,245,245,0.50)" font-size="7.5" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">R36S / R36H CONSOLE (RK3326 · ARKOS)</text>
+
+        <!-- Zone 3: Storage & External Services -->
+        <rect x="740" y="80" width="220" height="480" rx="8"
+              fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+        <rect x="770" y="84" width="160" height="13" rx="2" fill="#2d3142"/>
+        <text x="850" y="94" fill="rgba(245,245,245,0.45)" font-size="7.5" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">STORAGE & LIBRETRO CDN</text>
+
+        <!-- ================= Connectors (Z-order 2) ================= -->
+        <!-- Client SPA -> Server Core (GET/API) -->
+        <line x1="230" y1="210" x2="350" y2="210" stroke="#6a95d8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        
+        <!-- Client Upload -> Streaming Upload (POST ROM chunks) -->
+        <path d="M 230,340 H 290 Q 298,340 298,348 V 440 Q 298,448 306,448 H 350"
+              fill="none" stroke="#f08a59" stroke-width="1.3" marker-end="url(#arrow-accent)"/>
+
+        <!-- Launcher -> Server Core -->
+        <line x1="505" y1="140" x2="505" y2="180" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Server Core -> Terminal TUI -->
+        <line x1="600" y1="205" x2="620" y2="205" stroke="#bfc0c0" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+
+        <!-- Server Core -> Token & RAM Cache -->
+        <line x1="505" y1="250" x2="505" y2="295" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Server Core -> Scraper Engine -->
+        <path d="M 580,240 H 610 Q 618,240 618,248 V 325 Q 618,333 610,333 H 580"
+              fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+        <!-- Streaming Upload -> MicroSD Card (Atomic move) -->
+        <path d="M 640,450 H 710 Q 718,450 718,442 V 220 Q 718,212 726,212 H 760"
+              fill="none" stroke="#f08a59" stroke-width="1.3" marker-end="url(#arrow-accent)"/>
+
+        <!-- Scraper -> Libretro GitHub (Fallback/Online) -->
+        <line x1="660" y1="365" x2="760" y2="365" stroke="#6a95d8" stroke-width="1.1" marker-end="url(#arrow-link)"/>
+
+        <!-- Token/XML -> MicroSD (gamelist.xml sync) -->
+        <path d="M 630,320 H 685 Q 693,320 693,312 V 230 Q 693,222 701,222 H 760"
+              fill="none" stroke="#bfc0c0" stroke-width="1.1" marker-end="url(#arrow)"/>
+
+        <!-- Connector Labels -->
+        <rect x="250" y="196" width="65" height="14" rx="2" fill="#2d3142"/>
+        <text x="282" y="206" fill="#6a95d8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GET /api/games</text>
+
+        <rect x="245" y="380" width="75" height="14" rx="2" fill="#2d3142"/>
+        <text x="282" y="390" fill="#f08a59" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">64KB STREAM</text>
+
+        <rect x="665" y="351" width="62" height="14" rx="2" fill="#2d3142"/>
+        <text x="696" y="361" fill="#6a95d8" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTPS RAW</text>
+
+        <!-- ================= Nodes (Z-order 3) ================= -->
+        <!-- [Zone 1: Client Nodes] -->
+        <!-- Node 1.1: Web Browser UI -->
+        <rect x="60" y="140" width="170" height="90" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+        <text x="75" y="162" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Web Management UI</text>
+        <text x="75" y="180" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Tailwind CSS · Vanilla JS</text>
+        <text x="75" y="196" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">Game Grid · Cover Picker</text>
+        <text x="75" y="212" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace">Mascot & Brand Badge</text>
+
+        <!-- Node 1.2: Multi-ROM Upload Modal -->
+        <rect x="60" y="295" width="170" height="90" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+        <text x="75" y="318" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Upload Modal & Queue</text>
+        <text x="75" y="336" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Batch Multi-ROM Preview</text>
+        <text x="75" y="352" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">Byte Progress Calculation</text>
+        <text x="75" y="368" fill="#6a95d8" font-size="8" font-family="'Geist Mono', monospace">PS1 Folder Auto-Detection</text>
+
+        <!-- Node 1.3: Ad Support & License Tier -->
+        <rect x="60" y="430" width="170" height="75" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.18)" stroke-width="1"/>
+        <text x="75" y="452" fill="#f5f5f5" font-size="11.5" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">License & 4-Ad Gate</text>
+        <text x="75" y="470" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">MAC Address Verification</text>
+        <text x="75" y="488" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">Free Tier vs PRO Manager</text>
+
+        <!-- [Zone 2: R36S Host Nodes] -->
+        <!-- Node 2.1: Ports Shell Script -->
+        <rect x="390" y="90" width="230" height="50" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+        <text x="405" y="112" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">ArkOS WiFi Manager.sh</text>
+        <text x="405" y="128" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Ports Menu Entry · Auto IP Detect</text>
+
+        <!-- Node 2.2: FOCAL NODE - Python HTTP Server Core -->
+        <rect x="350" y="180" width="250" height="72" rx="6"
+              fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1.8"/>
+        <text x="365" y="206" fill="#f5f5f5" font-size="13" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Python HTTP Server (Core)</text>
+        <text x="365" y="224" fill="#f08a59" font-size="9.5" font-family="'Geist Mono', monospace">server.py · Zero-dependency</text>
+        <text x="365" y="240" fill="#bfc0c0" font-size="8.5" font-family="'Geist Mono', monospace">Pure Standard Library · Port 8080</text>
+
+        <!-- Node 2.3: Terminal TUI Display -->
+        <rect x="620" y="180" width="70" height="50" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.18)" stroke-width="1"/>
+        <text x="630" y="200" fill="#f5f5f5" font-size="10.5" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">TUI Display</text>
+        <text x="630" y="216" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace">tui.py</text>
+
+        <!-- Node 2.4: Token Engine & XML Parser -->
+        <rect x="350" y="295" width="280" height="85" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+        <text x="365" y="318" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Game Manager & Token Cache</text>
+        <text x="365" y="336" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">game_manager.py · MD5 Token Dict</text>
+        <text x="365" y="352" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">gamelist.xml XML Parser & Mutator</text>
+        <text x="365" y="368" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">RAM Memory Cache for Speed</text>
+
+        <!-- Node 2.5: Streaming Upload Handler (Turbo) -->
+        <rect x="350" y="415" width="290" height="85" rx="6"
+              fill="rgba(240,138,89,0.06)" stroke="#f08a59" stroke-width="1.3"/>
+        <text x="365" y="438" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Streaming Upload Engine</text>
+        <text x="365" y="456" fill="#f08a59" font-size="9" font-family="'Geist Mono', monospace">parse_multipart_streaming()</text>
+        <text x="365" y="472" fill="#bfc0c0" font-size="8.5" font-family="'Geist Mono', monospace">64KB Buffer · Direct to SD Card .tmp</text>
+        <text x="365" y="488" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">Zero MemoryError on 1GB RAM</text>
+
+        <!-- Node 2.6: Local Boxart Scraper Cache -->
+        <rect x="350" y="515" width="310" height="35" rx="4"
+              fill="#2d3142" stroke="rgba(245,245,245,0.12)" stroke-width="1"/>
+        <text x="365" y="535" fill="#bfc0c0" font-size="8.5" font-family="'Geist Mono', monospace">Pre-cached Indexes: PS1 (9.3k), GBA, SNES</text>
+
+        <!-- [Zone 3: Storage & External Nodes] -->
+        <!-- Node 3.1: MicroSD Card ROM Partition -->
+        <rect x="760" y="160" width="180" height="105" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+        <text x="775" y="185" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">MicroSD Storage (/roms)</text>
+        <text x="775" y="203" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">exFAT / ext4 Partition</text>
+        <text x="775" y="221" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">ROM Files (/roms/psx, gba...)</text>
+        <text x="775" y="239" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">Boxart Images (/images/)</text>
+        <text x="775" y="255" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">gamelist.xml Metadata</text>
+
+        <!-- Node 3.2: Libretro Thumbnails Repository -->
+        <rect x="760" y="325" width="180" height="85" rx="6"
+              fill="#393e53" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+        <text x="775" y="350" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', 'Prompt', sans-serif">Libretro Thumbnails</text>
+        <text x="775" y="368" fill="#6a95d8" font-size="9" font-family="'Geist Mono', monospace">GitHub Raw CDN</text>
+        <text x="775" y="386" fill="#bfc0c0" font-size="8.5" font-family="'Geist Mono', monospace">Named_Boxarts Repository</text>
+        <text x="775" y="402" fill="#8e98ac" font-size="8.5" font-family="'Geist Mono', monospace">2-Step Tree Query (No 500)</text>
+
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
