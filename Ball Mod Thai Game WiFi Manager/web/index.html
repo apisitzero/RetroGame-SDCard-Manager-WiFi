@@ -168,9 +168,10 @@
                 </button>
 
                 <!-- Instant Handheld Screen Refresh (Restart EmulationStation) -->
-                <button onclick="restartES()" title="รีเฟรชหน้าจอเครื่องเกม R36S เพื่อแสดงผลเกมและรูปปกใหม่บนเครื่องทันที" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 border border-emerald-500/40 transition">
-                    <i class="fa-solid fa-rotate text-emerald-200"></i>
-                    <span>อัปเดตหน้าจอเครื่อง (รีเฟรช ES)</span>
+                <button id="btnRestartES" onclick="restartES(false)" title="ระบบจะอัปเดตหน้าจอเครื่องเกมให้อัตโนมัติทุกครั้งที่ลงเกมเสร็จ (หรือกดปุ่มนี้เพื่อสั่งรีเฟรชเองได้ตลอดเวลา)" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 border border-emerald-500/40 transition">
+                    <i id="iconRestartES" class="fa-solid fa-rotate text-emerald-200"></i>
+                    <span id="textRestartES">อัปเดตหน้าจอเครื่อง (Auto ES)</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-400/40 font-mono">AUTO</span>
                 </button>
 
                 <!-- Exit / Shutdown Button -->
@@ -846,6 +847,14 @@
             }
         }
 
+        let autoRestartTimer = null;
+        function triggerAutoESRefresh(delay = 1200) {
+            if (autoRestartTimer) clearTimeout(autoRestartTimer);
+            autoRestartTimer = setTimeout(() => {
+                restartES(true);
+            }, delay);
+        }
+
         async function restartES(silent = false) {
             if (!silent) {
                 if (!confirm("ต้องการรีเฟรชหน้าจอเครื่องเกม R36S ทันทีหรือไม่?\n\nหน้าจอเครื่องเกมจะดับและโหลดใหม่ใน 2-3 วินาที เพื่อแสดงผลรายชื่อเกมใหม่และรูปปกที่เพิ่งอัปเดตทันทีครับ")) {
@@ -853,17 +862,30 @@
                 }
             }
 
-            showToast("กำลังสั่งรีเฟรชหน้าจอเครื่องเกม R36S...", true);
+            const icon = document.getElementById('iconRestartES');
+            const text = document.getElementById('textRestartES');
+            if (icon) icon.classList.add('fa-spin');
+            if (text) text.innerText = 'กำลังอัปเดตหน้าจอ...';
+
+            if (!silent) {
+                showToast("กำลังสั่งรีเฟรชหน้าจอเครื่องเกม R36S...", true);
+            }
+
             try {
                 const res = await fetch('/api/restart_es', { method: 'POST' });
                 const data = await res.json();
                 if (data && data.success) {
-                    showToast(data.message || "รีเฟรชหน้าจอเครื่องเกมสำเร็จ! เกมใหม่จะแสดงผลทันที", true);
+                    showToast(silent ? "🔄 อัปเดตหน้าจอเครื่องเกม R36S อัตโนมัติเรียบร้อยแล้ว!" : (data.message || "รีเฟรชหน้าจอเครื่องเกมสำเร็จ! เกมใหม่จะแสดงผลทันที"), true);
                 } else {
-                    showToast((data && data.error) || "ไม่สามารถรีเฟรชหน้าจอได้", false);
+                    if (!silent) showToast((data && data.error) || "ไม่สามารถรีเฟรชหน้าจอได้", false);
                 }
             } catch (err) {
-                showToast("ส่งคำสั่งรีเฟรชหน้าจอเครื่องเกมเรียบร้อยแล้ว", true);
+                if (!silent) showToast("ส่งคำสั่งรีเฟรชหน้าจอเครื่องเกมเรียบร้อยแล้ว", true);
+            } finally {
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                    if (text) text.innerText = 'อัปเดตหน้าจอเครื่อง (Auto ES)';
+                }, 2000);
             }
         }
 
@@ -1184,6 +1206,7 @@
                     if (game) game.display_name = newName;
                     renderGames(state.games);
                     closeRenameModal();
+                    triggerAutoESRefresh(1500);
                 } else {
                     showToast('เปลี่ยนชื่อไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -1313,6 +1336,7 @@
 
                     closeCoverModal();
                     await selectSystem(state.currentSystem, true);
+                    triggerAutoESRefresh(1500);
                 } else {
                     showToast('บันทึกปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -1378,6 +1402,7 @@
 
                     closeCoverModal();
                     await selectSystem(state.currentSystem, true);
+                    triggerAutoESRefresh(1500);
                 } else {
                     showToast('อัปโหลดปกไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -1404,6 +1429,7 @@
                     renderGames(state.games);
                     loadStatus();
                     loadSystems();
+                    triggerAutoESRefresh(1500);
                 } else {
                     showToast('ลบเกมไม่สำเร็จ: ' + (data.error || 'เกิดข้อผิดพลาด'), false);
                 }
@@ -2038,7 +2064,12 @@
                 <span>อัปโหลดเสร็จสิ้นทั้งหมด ${successCount} จาก ${appliedItems.length} เกม!</span>
             `;
 
-            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} เกม! กดปุ่ม 'อัปเดตหน้าจอเครื่อง' ด้านบนเพื่อรีเฟรชหน้าจอ R36S ทันที`);
+            if (successCount > 0) {
+                showToast(`อัปโหลดสำเร็จแล้ว ${successCount} เกม! ระบบกำลังอัปเดตหน้าจอเครื่องเล่น R36S ให้อัตโนมัติ...`);
+                triggerAutoESRefresh(1500);
+            } else {
+                showToast(`เกิดข้อผิดพลาด ไม่สามารถอัปโหลดเกมได้`, false);
+            }
             setTimeout(() => {
                 closeUploadModal();
                 btn.disabled = false;
