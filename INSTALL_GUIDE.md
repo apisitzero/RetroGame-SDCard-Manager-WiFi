@@ -20,7 +20,7 @@
 │
 ├── 📄 Ball Mod Thai Game WiFi Manager.sh         <-- ไฟล์เปิดระบบในเมนู Ports บนเครื่องเกม
 │
-└── 📁 arkos_wifi_manager/           <-- โฟลเดอร์โปรแกรมทั้งหมด
+└── 📁 Ball Mod Thai Game WiFi Manager/           <-- โฟลเดอร์โปรแกรมทั้งหมด
       ├── server.py
       ├── game_manager.py
       ├── tui.py
@@ -38,7 +38,7 @@
 1. ปิดเครื่อง R36S แล้วถอดเมมโมรี่การ์ด (ช่อง TF1 หรือ TF2 ที่เก็บรอม) มาเสียบกับคอมพิวเตอร์
 2. เปิดไดรฟ์ **EASYROMS** (หรือไดรฟ์ที่มีโฟลเดอร์เกม เช่น gba, psx, sfc)
 3. เข้าไปที่โฟลเดอร์ **`ports`** (พาธจะเป็น `EASYROMS\ports\`)
-4. ก๊อปปี้ **`Ball Mod Thai Game WiFi Manager.sh`** และโฟลเดอร์ **`arkos_wifi_manager`** ไปวางไว้ในโฟลเดอร์ `ports`
+4. ก๊อปปี้ **`Ball Mod Thai Game WiFi Manager.sh`** และโฟลเดอร์ **`Ball Mod Thai Game WiFi Manager`** ไปวางไว้ในโฟลเดอร์ `ports`
 5. นำเมมการ์ดกลับไปเสียบที่เครื่อง R36S แล้วเปิดเครื่อง
 
 ---

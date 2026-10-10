@@ -133,7 +133,7 @@ ArkOS-WiFi-Manager/
 ├── 📄 INSTALL_GUIDE.md                # คู่มือภาษาไทยฉบับย่อ
 ├── 📄 README.md                       # เอกสารฉบับสมบูรณ์ (ไฟล์นี้)
 │
-└── 📁 arkos_wifi_manager/             # โฟลเดอร์โปรแกรมหลัก (วางไว้คู่กับสคริปต์ .sh)
+└── 📁 Ball Mod Thai Game WiFi Manager/ # โฟลเดอร์โปรแกรมหลัก (วางไว้คู่กับสคริปต์ .sh)
       ├── server.py                    # Multi-threaded Web Server (Zero dependencies)
       ├── game_manager.py              # ตัวจัดการ ROM, gamelist.xml, Token & RAM Cache
       ├── tui.py                       # โมดูลแสดงผล Terminal ASCII Art 640x480
@@ -153,7 +153,7 @@ ArkOS-WiFi-Manager/
 3. เข้าไปที่โฟลเดอร์ **`ports`** (พาธจะเป็น `EASYROMS\ports\`)
 4. คัดลอกสิ่งต่อไปนี้ไปวางในโฟลเดอร์ `ports`:
    - ไฟล์ **`Ball Mod Thai Game WiFi Manager.sh`**
-   - โฟลเดอร์ **`arkos_wifi_manager`**
+   - โฟลเดอร์ **`Ball Mod Thai Game WiFi Manager`**
 5. นำการ์ด MicroSD กลับไปเสียบที่เครื่อง R36S แล้วเปิดเครื่อง
 
 ### วิธีที่ 2: ถ่ายโอนไฟล์ผ่าน Wi-Fi / SSH

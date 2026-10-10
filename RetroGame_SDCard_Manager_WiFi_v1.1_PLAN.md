@@ -31,7 +31,7 @@
 | เวอร์ชัน | **1.1** |
 | ชื่อเพจ/แบรนด์ในหน้าเว็บและส่วนอื่น | **เล่าเรื่องเกม** (คงเดิม) |
 | ชื่อบน Terminal TUI | **BallModThaiGame** (อังกฤษเท่านั้น) |
-| โครงสร้างหลัก | `.sh` launcher + `arkos_wifi_manager/` (`tui.py`, `server.py`, `web/index.html`) |
+| โครงสร้างหลัก | `.sh` launcher + `Ball Mod Thai Game WiFi Manager/` (`tui.py`, `server.py`, `web/index.html`) |
 
 > ⚠️ ให้ rename ชื่อโปรเจกต์ในเอกสาร/ข้อความที่เกี่ยวข้อง แต่ **ไม่ต้องแตะแบรนด์ "เล่าเรื่องเกม"** นอกจากหน้า TUI
 
@@ -221,7 +221,7 @@
 
 | เวอร์ชัน | วิธีแจก |
 |---|---|
-| 🆓 Free | ไฟล์ **Zip** บน **GitHub** (โปรแกรม + `.sh` + โฟลเดอร์ `arkos_wifi_manager`) |
+| 🆓 Free | ไฟล์ **Zip** บน **GitHub** (โปรแกรม + `.sh` + โฟลเดอร์ `Ball Mod Thai Game WiFi Manager`) |
 | 💎 Premium | แอดมินเจน `.sh` เฉพาะลูกค้า (ผูก MAC + วันหมดอายุ) ส่งให้โดยตรง |
 
 **การติดตั้ง:** วาง `.sh` + โฟลเดอร์โปรแกรมไว้ที่ `/roms/ports/` (ออฟไลน์ผ่านการ์ด หรือออนไลน์ผ่าน SSH/FileZilla + `chmod +x`) → เปิดจากหมวด **PORTS**

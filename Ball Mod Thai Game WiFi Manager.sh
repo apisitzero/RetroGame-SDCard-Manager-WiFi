@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================
-# Ball Mod Thai Game WiFi Manager v1.1 (Free Tier)
+# Ball Mod Thai Game WiFi Manager v1.1
 # High-Speed On-Device Game Manager for R36S / ArkOS Handhelds
 # จัดทำโดย: BallModThaiGame & เพจเล่าเรื่องเกม (Lao Reuang Game)
 # ==============================================================
@@ -10,7 +10,13 @@ export PYTHONUNBUFFERED=1
 # Free Tier (No license)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_DIR="$SCRIPT_DIR/arkos_wifi_manager"
+if [ -d "$SCRIPT_DIR/Ball Mod Thai Game WiFi Manager" ]; then
+    APP_DIR="$SCRIPT_DIR/Ball Mod Thai Game WiFi Manager"
+elif [ -d "$SCRIPT_DIR/ball_mod_thai_game_wifi_manager" ]; then
+    APP_DIR="$SCRIPT_DIR/ball_mod_thai_game_wifi_manager"
+else
+    APP_DIR="$SCRIPT_DIR/arkos_wifi_manager"
+fi
 
 # Switch output to terminal framebuffer console on R36S if available
 if [ -c "/dev/tty1" ]; then
