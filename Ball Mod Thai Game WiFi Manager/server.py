@@ -567,9 +567,14 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
                     '.gba': 'gba', '.gb': 'gb', '.gbc': 'gbc', '.nes': 'nes',
                     '.sfc': 'sfc', '.smc': 'sfc', '.nds': 'nds', '.n64': 'n64',
                     '.iso': 'psx', '.cue': 'psx', '.chd': 'psx', '.pbp': 'psx',
-                    '.md': 'megadrive', '.gen': 'megadrive'
+                    '.bin': 'psx', '.img': 'psx', '.ccd': 'psx', '.mdf': 'psx',
+                    '.sub': 'psx', '.m3u': 'psx',
+                    '.md': 'megadrive', '.gen': 'megadrive', '.smd': 'megadrive',
+                    '.cdi': 'dreamcast', '.gdi': 'dreamcast'
                 }
                 system_id = auto_map.get(ext, 'gba')
+                if is_folder and system_id == 'gba':
+                    system_id = 'psx'
 
             # Cover support: check if cover_file or cover_url was provided
             cover_part = parts.get('cover_file')

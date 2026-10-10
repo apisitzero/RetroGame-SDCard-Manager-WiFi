@@ -1000,7 +1000,22 @@
         function renderGames(games) {
             const container = document.getElementById('gamesContainer');
             if (!games || games.length === 0) {
-                container.innerHTML = `<div class="py-20 text-center text-xs text-slate-400"><i class="fa-solid fa-box-open text-4xl mb-2 text-slate-600"></i><div>ไม่มีเกมในระบบนี้</div></div>`;
+                const searchQ = (document.getElementById('searchInput')?.value || '').trim();
+                if (searchQ) {
+                    container.innerHTML = `
+                        <div class="py-20 text-center text-xs text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-4xl mb-3 text-indigo-400/60"></i>
+                            <div class="font-bold text-sm text-slate-200">ไม่พบเกมที่ค้นหา: "${escapeHtml(searchQ)}"</div>
+                            <div class="mt-1 text-slate-500 text-[11px]">ลองตรวจสอบตัวสะกด หรือกดปุ่มรีเฟรช <i class="fa-solid fa-arrows-rotate"></i> เพื่ออัปเดตรายการ</div>
+                        </div>`;
+                } else {
+                    container.innerHTML = `
+                        <div class="py-20 text-center text-xs text-slate-400">
+                            <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-600"></i>
+                            <div class="font-bold text-sm text-slate-300">ไม่มีเกมในระบบนี้</div>
+                            <div class="mt-1 text-slate-500 text-[11px]">กดปุ่ม "เพิ่มเกมเข้าเครื่อง" เพื่อเริ่มลงเกม</div>
+                        </div>`;
+                }
                 return;
             }
 
@@ -1673,10 +1688,102 @@
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
                 dropArea.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
             });
-            dropArea.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                handleFilesSelected({ target: { files: dt.files } });
+            dropArea.addEventListener('drop', async (e) => {
+                await handleDroppedItems(e);
             });
+        }
+
+        async function handleDroppedItems(e) {
+            const dt = e.dataTransfer;
+            if (!dt) return;
+
+            // Check if DataTransferItemList with webkitGetAsEntry is supported
+            if (dt.items && dt.items.length > 0 && dt.items[0].webkitGetAsEntry) {
+                const entries = [];
+                for (let i = 0; i < dt.items.length; i++) {
+                    const entry = dt.items[i].webkitGetAsEntry();
+                    if (entry) entries.push(entry);
+                }
+
+                async function traverseEntry(entry, rootFolderName = null) {
+                    if (entry.isFile) {
+                        return new Promise((resolve) => {
+                            entry.file((file) => {
+                                resolve([{
+                                    file: file,
+                                    name: file.name,
+                                    size: file.size,
+                                    is_folder: !!rootFolderName,
+                                    folder_name: rootFolderName
+                                }]);
+                            }, () => resolve([]));
+                        });
+                    } else if (entry.isDirectory) {
+                        const curRoot = rootFolderName || entry.name;
+                        const dirReader = entry.createReader();
+                        const collected = [];
+
+                        const readBatch = () => new Promise((resolve) => {
+                            dirReader.readEntries(async (subEntries) => {
+                                if (!subEntries || subEntries.length === 0) {
+                                    resolve();
+                                } else {
+                                    for (const sub of subEntries) {
+                                        const subFiles = await traverseEntry(sub, curRoot);
+                                        collected.push(...subFiles);
+                                    }
+                                    await readBatch();
+                                    resolve();
+                                }
+                            }, () => resolve());
+                        });
+
+                        await readBatch();
+                        return collected;
+                    }
+                    return [];
+                }
+
+                let allItems = [];
+                for (const entry of entries) {
+                    const res = await traverseEntry(entry, entry.isDirectory ? entry.name : null);
+                    allItems.push(...res);
+                }
+
+                if (allItems.length > 0) {
+                    allItems.forEach(itemInfo => {
+                        const isF = itemInfo.is_folder;
+                        const fName = itemInfo.folder_name;
+                        let sys = detectSystemByExt(itemInfo.name);
+                        if (isF) {
+                            sys = state.currentSystem || 'psx';
+                        }
+                        state.uploadQueue.push({
+                            id: 'q_' + Math.random().toString(36).substr(2, 9),
+                            file: itemInfo.file,
+                            name: itemInfo.name,
+                            displayName: isF ? fName : (cleanGameTitle(itemInfo.name) || itemInfo.name),
+                            size: itemInfo.size,
+                            is_folder: isF,
+                            folder_name: fName,
+                            system: sys,
+                            applied: true,
+                            coverOption: 'auto',
+                            coverUrl: null,
+                            coverPreview: null,
+                            customCoverFile: null,
+                            coverLoading: false,
+                            uploadStatus: 'pending'
+                        });
+                    });
+                    showReviewZone();
+                    autoFetchCoversForQueue();
+                    return;
+                }
+            }
+
+            // Fallback for standard files
+            handleFilesSelected({ target: { files: dt.files } });
         }
 
         function handleFilesSelected(e) {
@@ -1712,27 +1819,42 @@
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
 
-            const folderName = files[0].webkitRelativePath ? files[0].webkitRelativePath.split('/')[0] : 'PS1_Game';
+            const folderGroups = {};
             files.forEach(f => {
-                const item = {
-                    id: 'q_' + Math.random().toString(36).substr(2, 9),
-                    file: f,
-                    name: f.name,
-                    displayName: folderName,
-                    size: f.size,
-                    is_folder: true,
-                    folder_name: folderName,
-                    system: 'psx',
-                    applied: true,
-                    coverOption: 'auto',
-                    coverUrl: null,
-                    coverPreview: null,
-                    customCoverFile: null,
-                    coverLoading: false,
-                    uploadStatus: 'pending'
-                };
-                state.uploadQueue.push(item);
+                const folderName = f.webkitRelativePath ? f.webkitRelativePath.split('/')[0] : 'PS1_Game';
+                if (!folderGroups[folderName]) folderGroups[folderName] = [];
+                folderGroups[folderName].push(f);
             });
+
+            Object.entries(folderGroups).forEach(([folderName, grpFiles]) => {
+                const hasPsxExt = grpFiles.some(f => {
+                    const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
+                    return ['.bin', '.cue', '.iso', '.chd', '.pbp', '.img', '.ccd', '.mdf', '.m3u'].includes(ext);
+                });
+                const targetSys = (state.currentSystem === 'psx' || hasPsxExt) ? 'psx' : (state.currentSystem || 'psx');
+
+                grpFiles.forEach(f => {
+                    const item = {
+                        id: 'q_' + Math.random().toString(36).substr(2, 9),
+                        file: f,
+                        name: f.name,
+                        displayName: folderName,
+                        size: f.size,
+                        is_folder: true,
+                        folder_name: folderName,
+                        system: targetSys,
+                        applied: true,
+                        coverOption: 'auto',
+                        coverUrl: null,
+                        coverPreview: null,
+                        customCoverFile: null,
+                        coverLoading: false,
+                        uploadStatus: 'pending'
+                    };
+                    state.uploadQueue.push(item);
+                });
+            });
+
             showReviewZone();
             autoFetchCoversForQueue();
         }
@@ -1743,7 +1865,10 @@
                 '.gba': 'gba', '.gb': 'gb', '.gbc': 'gbc', '.nes': 'nes',
                 '.sfc': 'sfc', '.smc': 'sfc', '.nds': 'nds', '.n64': 'n64',
                 '.iso': 'psx', '.cue': 'psx', '.chd': 'psx', '.pbp': 'psx',
-                '.md': 'megadrive', '.gen': 'megadrive'
+                '.bin': (state.currentSystem === 'megadrive' || state.currentSystem === 'genesis') ? state.currentSystem : 'psx',
+                '.img': 'psx', '.ccd': 'psx', '.mdf': 'psx', '.sub': 'psx', '.m3u': 'psx',
+                '.md': 'megadrive', '.gen': 'megadrive', '.smd': 'megadrive',
+                '.cdi': 'dreamcast', '.gdi': 'dreamcast'
             };
             return map[ext] || (state.currentSystem || 'gba');
         }

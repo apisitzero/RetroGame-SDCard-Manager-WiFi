@@ -78,8 +78,12 @@ IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
 ROM_EXTENSIONS = {
     '.zip', '.7z', '.gba', '.gb', '.gbc', '.nes', '.sfc', '.smc', '.bin',
     '.cue', '.iso', '.chd', '.pbp', '.nds', '.n64', '.z64', '.v64',
-    '.md', '.gen', '.pce', '.ws', '.wsc', '.gg', '.sms', '.cdi', '.gdi'
+    '.md', '.gen', '.pce', '.ws', '.wsc', '.gg', '.sms', '.cdi', '.gdi',
+    '.img', '.mdf', '.ccd', '.sub', '.m3u'
 }
+FOLDER_GAME_EXTENSIONS = (
+    '.m3u', '.cue', '.chd', '.pbp', '.iso', '.ccd', '.img', '.bin', '.mdf', '.zip', '.7z'
+)
 
 class ArkOSGameManager:
     def __init__(self, roms_root=None):
@@ -140,6 +144,82 @@ class ArkOSGameManager:
                 "root_path": self.roms_root, "error": str(e)
             }
 
+    def _find_folder_game_file(self, folder_path):
+        """
+        Recursively scans a game directory (up to 3 levels deep) to find the primary launchable ROM.
+        Returns a tuple: (rel_file_path, primary_filename, total_folder_size) or (None, None, 0)
+        Priority: .m3u > .cue > .chd > .pbp > .iso > .ccd > .img > .bin > other
+        """
+        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+            return None, None, 0
+
+        found_files = []
+        total_size = 0
+
+        try:
+            for root, dirs, files in os.walk(folder_path):
+                # Avoid hidden folders and media folders inside game directory
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d.lower() not in ('media', 'images', 'boxart', 'downloaded_images', '.tmp_uploads')]
+                
+                rel_root = os.path.relpath(root, folder_path)
+                depth = 0 if rel_root == '.' else len(Path(rel_root).parts)
+                if depth > 3:
+                    continue
+
+                for f in files:
+                    if f.startswith('.'):
+                        continue
+                    full_p = os.path.join(root, f)
+                    try:
+                        fsize = os.path.getsize(full_p)
+                        total_size += fsize
+                    except Exception:
+                        fsize = 0
+
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in FOLDER_GAME_EXTENSIONS:
+                        rel_p = os.path.relpath(full_p, folder_path).replace('\\', '/')
+                        found_files.append((f, rel_p, ext, fsize))
+        except Exception:
+            pass
+
+        if not found_files:
+            return None, None, total_size
+
+        ext_priority = {
+            '.m3u': 1,
+            '.cue': 2,
+            '.chd': 3,
+            '.pbp': 4,
+            '.iso': 5,
+            '.ccd': 6,
+            '.img': 7,
+            '.mdf': 8,
+            '.bin': 9,
+            '.zip': 10,
+            '.7z': 11
+        }
+
+        def file_sort_key(item):
+            fname, rel_p, ext, fsize = item
+            fname_lower = fname.lower()
+            prio = ext_priority.get(ext, 99)
+            
+            # For .bin files: penalize secondary audio tracks like "track 2", "track 3"
+            track_penalty = 0
+            if ext == '.bin':
+                if re.search(r'track\s*0*[2-9]', fname_lower) or re.search(r'track\s*[1-9][0-9]', fname_lower):
+                    track_penalty = 100
+                elif 'track 1' in fname_lower or 'track 01' in fname_lower or 'track01' in fname_lower:
+                    track_penalty = -5
+
+            depth = len(Path(rel_p).parts)
+            return (prio, track_penalty, depth, -fsize)
+
+        found_files.sort(key=file_sort_key)
+        best = found_files[0]
+        return best[1], best[0], total_size
+
     def _count_system_games(self, sys_path, system_id=None):
         """Ultra-fast count of valid game ROMs in a system directory."""
         if not os.path.exists(sys_path) or not os.path.isdir(sys_path):
@@ -149,7 +229,7 @@ class ArkOSGameManager:
             with os.scandir(sys_path) as it:
                 for entry in it:
                     name_lower = entry.name.lower()
-                    if name_lower.startswith('.') or name_lower in ('gamelist.xml', 'images', 'boxart', 'downloaded_images', 'media', 'cheats'):
+                    if name_lower.startswith('.') or name_lower in ('gamelist.xml', 'images', 'boxart', 'downloaded_images', 'media', 'cheats', '.tmp_uploads'):
                         continue
                     if entry.is_file():
                         ext = os.path.splitext(name_lower)[1]
@@ -157,12 +237,9 @@ class ArkOSGameManager:
                             count += 1
                     elif entry.is_dir():
                         # Subfolder game check (e.g. PS1 / Saturn folder)
-                        try:
-                            with os.scandir(entry.path) as sub_it:
-                                if any(os.path.splitext(s.name.lower())[1] in ('.cue', '.m3u', '.chd', '.iso', '.pbp') for s in sub_it if s.is_file()):
-                                    count += 1
-                        except Exception:
-                            pass
+                        rel_f, _, _ = self._find_folder_game_file(entry.path)
+                        if rel_f:
+                            count += 1
             return count
         except Exception:
             return 0
@@ -248,7 +325,7 @@ class ArkOSGameManager:
         seen_roms = set()
 
         for entry in all_entries:
-            if entry.startswith('.') or entry.lower() in ('gamelist.xml', 'images', 'boxart', 'downloaded_images'):
+            if entry.startswith('.') or entry.lower() in ('gamelist.xml', 'images', 'boxart', 'downloaded_images', 'media', 'cheats', '.tmp_uploads'):
                 continue
 
             entry_path = os.path.join(sys_path, entry)
@@ -257,19 +334,21 @@ class ArkOSGameManager:
 
             # Handle folder-based games (like in PS1 or Saturn)
             if is_dir:
-                try:
-                    cue_bin_files = [f for f in os.listdir(entry_path) if os.path.splitext(f)[1].lower() in ('.cue', '.m3u', '.chd', '.iso', '.pbp')]
-                except Exception:
-                    cue_bin_files = []
-                if not cue_bin_files:
+                rel_game_file, primary_fname, folder_size = self._find_folder_game_file(entry_path)
+                if not rel_game_file:
                     continue
                 rom_filename = entry
-                main_file = os.path.join(entry, cue_bin_files[0])
+                main_file = os.path.normpath(os.path.join(entry, rel_game_file)).replace('\\', '/')
+                size_bytes = folder_size
             else:
                 if ext not in ROM_EXTENSIONS:
                     continue
                 rom_filename = entry
                 main_file = entry
+                try:
+                    size_bytes = os.path.getsize(entry_path)
+                except Exception:
+                    size_bytes = 0
 
             seen_roms.add(rom_filename.lower())
 
@@ -277,15 +356,6 @@ class ArkOSGameManager:
             clean_token_key = f"{system_id}_{rom_filename}".lower()
             token_hash = hashlib.md5(clean_token_key.encode('utf-8')).hexdigest()[:12]
             token = f"t_{system_id}_{token_hash}"
-
-            # File size
-            try:
-                if is_dir:
-                    size_bytes = sum(os.path.getsize(os.path.join(entry_path, f)) for f in os.listdir(entry_path) if os.path.isfile(os.path.join(entry_path, f)))
-                else:
-                    size_bytes = os.path.getsize(entry_path)
-            except Exception:
-                size_bytes = 0
 
             size_str = self._format_size(size_bytes)
 
@@ -297,6 +367,7 @@ class ArkOSGameManager:
                 xml_games.get(rom_filename.lower()) or
                 xml_games.get(main_file.lower()) or
                 xml_games.get(clean_base) or
+                xml_games.get(os.path.basename(main_file).lower()) or
                 {}
             )
             display_name = meta.get('name') or base_name
@@ -310,7 +381,17 @@ class ArkOSGameManager:
                 full_cover_path = self._resolve_cover_path(cover_path, sys_path)
                 has_cover = bool(full_cover_path and os.path.exists(full_cover_path))
 
-            # If not in XML or file missing, search common cover folders
+            # If not in XML or file missing, check inside game folder if folder-based game
+            if not has_cover and is_dir:
+                for img_candidate in ['cover.png', 'cover.jpg', 'folder.jpg', 'front.jpg', f"{entry}.png", f"{entry}.jpg", f"{base_name}.png", f"{base_name}.jpg"]:
+                    cand_in_folder = os.path.join(entry_path, img_candidate)
+                    if os.path.exists(cand_in_folder):
+                        has_cover = True
+                        full_cover_path = cand_in_folder
+                        cover_path = f"./{entry}/{img_candidate}"
+                        break
+
+            # If still not found, search common cover folders
             if not has_cover:
                 for img_dir in ['images', 'boxart', 'downloaded_images', 'media/boxart', 'media/images']:
                     for img_ext in ['.png', '.jpg', '.jpeg', '.webp']:
@@ -482,7 +563,8 @@ class ArkOSGameManager:
                 path_elem = game_elem.find('path')
                 if path_elem is None or not path_elem.text:
                     continue
-                rel_path = path_elem.text.strip().lstrip('./').lstrip('/')
+                rel_path = path_elem.text.strip().lstrip('.').lstrip('/')
+                rel_path_clean = rel_path.replace('\\', '/')
                 name_elem = game_elem.find('name')
                 desc_elem = game_elem.find('desc')
                 img_elem = game_elem.find('image')
@@ -491,19 +573,27 @@ class ArkOSGameManager:
                 desc = desc_elem.text.strip() if (desc_elem is not None and desc_elem.text) else ""
                 image = img_elem.text.strip() if (img_elem is not None and img_elem.text) else None
 
-                bname = os.path.basename(rel_path).lower()
+                bname = os.path.basename(rel_path_clean).lower()
                 clean_bname = self._clean_title(os.path.splitext(bname)[0]).lower()
 
                 item = {
                     "name": name,
                     "desc": desc,
                     "image": image,
-                    "path": rel_path
+                    "path": rel_path_clean
                 }
                 result[bname] = item
-                result[rel_path.lower()] = item
+                result[rel_path_clean.lower()] = item
                 if clean_bname:
                     result[clean_bname] = item
+
+                parts = Path(rel_path_clean).parts
+                if len(parts) > 1:
+                    folder_root = parts[0].lower()
+                    result[folder_root] = item
+                    clean_folder_root = self._clean_title(parts[0]).lower()
+                    if clean_folder_root:
+                        result[clean_folder_root] = item
         except Exception as e:
             print(f"[ArkOSGameManager] XML parse error {gamelist_path}: {e}")
         return result
@@ -606,12 +696,15 @@ class ArkOSGameManager:
                 tree = ET.ElementTree(root)
 
             target_path_1 = f"./{game['filename']}".lower()
+            target_path_2 = f"./{game.get('main_file', '')}".lower()
             found_elem = None
             for g_elem in root.findall('game'):
                 p = g_elem.find('path')
-                if p is not None and p.text and p.text.strip().lower() == target_path_1:
-                    found_elem = g_elem
-                    break
+                if p is not None and p.text:
+                    clean_p = p.text.strip().lower()
+                    if clean_p in (target_path_1, target_path_2, game['filename'].lower()):
+                        found_elem = g_elem
+                        break
 
             if found_elem is None:
                 found_elem = ET.SubElement(root, 'game')
@@ -663,12 +756,14 @@ class ArkOSGameManager:
             if os.path.exists(gamelist_path):
                 tree = ET.parse(gamelist_path)
                 root = tree.getroot()
-                target_path = f"./{game['filename']}".lower()
-                for g_elem in root.findall('game'):
+                target_path_1 = f"./{game['filename']}".lower()
+                target_path_2 = f"./{game.get('main_file', '')}".lower()
+                for g_elem in list(root.findall('game')):
                     p = g_elem.find('path')
-                    if p is not None and p.text and p.text.strip().lower() == target_path:
-                        root.remove(g_elem)
-                        break
+                    if p is not None and p.text:
+                        p_norm = p.text.strip().lower().replace('\\', '/')
+                        if p_norm in (target_path_1, target_path_2, game['filename'].lower()) or (game["is_dir"] and p_norm.startswith(target_path_1 + "/")):
+                            root.remove(g_elem)
                 self._save_gamelist_tree(tree, system_id, sys_path)
 
             self._clear_cache_for_system(system_id)
@@ -688,7 +783,9 @@ class ArkOSGameManager:
         if is_folder and folder_name:
             target_dir = os.path.join(sys_path, folder_name)
             os.makedirs(target_dir, exist_ok=True)
-            target_file_path = os.path.join(target_dir, filename)
+            safe_rel_filename = filename.replace('\\', '/').lstrip('/')
+            target_file_path = os.path.join(target_dir, safe_rel_filename)
+            os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
             entry_name = folder_name
         else:
             target_file_path = os.path.join(sys_path, filename)
