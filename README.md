@@ -37,7 +37,7 @@
 ```mermaid
 flowchart TD
     subgraph R36S["เครื่องเล่นเกม R36S (ArkOS Linux)"]
-        Ports["1. เมนู PORTS บนเครื่องเกม"] --> Shell["ArkOS WiFi Manager.sh"]
+        Ports["1. เมนู PORTS บนเครื่องเกม"] --> Shell["Ball Mod Thai Game WiFi Manager.sh"]
         Shell --> PyServer["2. server.py (Multi-Threaded HTTP Server)"]
         
         PyServer --> TUI["3. TUI Console (หน้าจอ 640x480)
@@ -128,8 +128,8 @@ flowchart TD
 ```
 ArkOS-WiFi-Manager/
 │
-├── 📄 ArkOS WiFi Manager.sh           # สคริปต์เรียกโปรแกรมในเมนู Ports (Unix LF)
-├── 📦 ArkOS-WiFi-Manager-R36S.zip      # ไฟล์ Zip รวมพร้อมแตกไฟล์ลงเมมโมรี่การ์ด
+├── 📄 Ball Mod Thai Game WiFi Manager.sh   # สคริปต์เรียกโปรแกรมในเมนู Ports (Unix LF)
+├── 📦 RetroGame-SDCard-Manager-WiFi-v1.1-Free.zip # ไฟล์ Zip พร้อมแตกไฟล์ลงเมมโมรี่การ์ด
 ├── 📄 INSTALL_GUIDE.md                # คู่มือภาษาไทยฉบับย่อ
 ├── 📄 README.md                       # เอกสารฉบับสมบูรณ์ (ไฟล์นี้)
 │
@@ -152,7 +152,7 @@ ArkOS-WiFi-Manager/
 2. เปิดไดรฟ์ **`EASYROMS`** (หรือไดรฟ์เก็บเกมที่มีโฟลเดอร์ gba, psx, sfc)
 3. เข้าไปที่โฟลเดอร์ **`ports`** (พาธจะเป็น `EASYROMS\ports\`)
 4. คัดลอกสิ่งต่อไปนี้ไปวางในโฟลเดอร์ `ports`:
-   - ไฟล์ **`ArkOS WiFi Manager.sh`**
+   - ไฟล์ **`Ball Mod Thai Game WiFi Manager.sh`**
    - โฟลเดอร์ **`arkos_wifi_manager`**
 5. นำการ์ด MicroSD กลับไปเสียบที่เครื่อง R36S แล้วเปิดเครื่อง
 
@@ -162,7 +162,7 @@ ArkOS-WiFi-Manager/
 - ปลายทาง: `/roms/ports/` (หรือ `/roms2/ports/`)
 - เปิด Terminal แล้วรันคำสั่งกำหนดสิทธิ์:
   ```bash
-  chmod +x "/roms/ports/ArkOS WiFi Manager.sh"
+  chmod +x "/roms/ports/Ball Mod Thai Game WiFi Manager.sh"
   ```
 
 ---
@@ -211,8 +211,8 @@ ArkOS-WiFi-Manager/
 > ตรวจสอบให้แน่ใจว่าได้เสียบ USB Wi-Fi Dongle เข้ากับช่อง OTG ของเครื่อง R36S และต่อ Wi-Fi ในเมนู `Options > Wi-Fi` เรียบร้อยแล้ว
 
 > [!NOTE]
-> **ไม่พบเมนู ArkOS WiFi Manager ในหมวด PORTS**  
-> ตรวจสอบว่าไฟล์ `ArkOS WiFi Manager.sh` อยู่ในโฟลเดอร์ `ports/` จริงหรือไม่ และชื่อไฟล์ลงท้ายด้วย `.sh`
+> **ไม่พบเมนู Ball Mod Thai Game WiFi Manager ในหมวด PORTS**  
+> ตรวจสอบว่าไฟล์ `Ball Mod Thai Game WiFi Manager.sh` อยู่ในโฟลเดอร์ `ports/` จริงหรือไม่ และชื่อไฟล์ลงท้ายด้วย `.sh`
 
 > [!IMPORTANT]
 > **เปลี่ยนชื่อเกมหรือเปลี่ยนปกแล้ว แต่ในเครื่อง R36S ยังไม่เปลี่ยน**  

@@ -1,8 +1,8 @@
 #!/bin/bash
 # ==============================================================
-# RetroGame & SD Card Manager Version WiFi v1.1
+# Ball Mod Thai Game WiFi Manager v1.1 (Free Tier)
 # High-Speed On-Device Game Manager for R36S / ArkOS Handhelds
-# จัดทำโดย: เพจเล่าเรื่องเกม (Lao Reuang Game) & BallModThaiGame
+# จัดทำโดย: BallModThaiGame & เพจเล่าเรื่องเกม (Lao Reuang Game)
 # ==============================================================
 
 export TERM=linux
