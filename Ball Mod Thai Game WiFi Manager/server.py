@@ -20,6 +20,7 @@ import json
 import socket
 import signal
 import shutil
+import subprocess
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
@@ -459,6 +460,23 @@ class ArkOSRequestHandler(BaseHTTPRequestHandler):
                 sys.stdout.flush()
                 os._exit(0)
             threading.Thread(target=delayed_exit, daemon=True).start()
+            return
+
+        # 0.1 Instant Handheld Screen Refresh (Restart EmulationStation on ArkOS)
+        if path == '/api/restart_es':
+            def do_restart_es():
+                time.sleep(0.3)
+                cmd = "sudo systemctl restart emulationstation 2>/dev/null || (sudo killall -9 emulationstation 2>/dev/null; sleep 1; sudo emulationstation &)"
+                try:
+                    subprocess.run(cmd, shell=True, timeout=8)
+                except Exception as ex:
+                    print(f"[Server] restart_es command error: {ex}")
+
+            threading.Thread(target=do_restart_es, daemon=True).start()
+            self.send_json({
+                "success": True,
+                "message": "สั่งรีเฟรชหน้าจอเครื่องเกม R36S แล้ว! หน้ารวมเกมจะรีสตาร์ทเพื่อแสดงเกมและปกใหม่ทันที"
+            })
             return
 
         is_premium = self.server.license_mgr.is_premium()

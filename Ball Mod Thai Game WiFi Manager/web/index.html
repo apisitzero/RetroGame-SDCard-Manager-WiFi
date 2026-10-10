@@ -167,6 +167,12 @@
                     <span>ลงเกมใหม่ (ROM)</span>
                 </button>
 
+                <!-- Instant Handheld Screen Refresh (Restart EmulationStation) -->
+                <button onclick="restartES()" title="รีเฟรชหน้าจอเครื่องเกม R36S เพื่อแสดงผลเกมและรูปปกใหม่บนเครื่องทันที" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 border border-emerald-500/40 transition">
+                    <i class="fa-solid fa-rotate text-emerald-200"></i>
+                    <span>อัปเดตหน้าจอเครื่อง (รีเฟรช ES)</span>
+                </button>
+
                 <!-- Exit / Shutdown Button -->
                 <button onclick="confirmExitServer()" title="ปิดระบบและกลับสู่หน้าหลัก ArkOS บนเครื่องเล่นเกม" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow transition">
                     <i class="fa-solid fa-power-off"></i>
@@ -837,6 +843,27 @@
                 `;
             } catch (err) {
                 showToast("ปิดระบบเรียบร้อยแล้ว");
+            }
+        }
+
+        async function restartES(silent = false) {
+            if (!silent) {
+                if (!confirm("ต้องการรีเฟรชหน้าจอเครื่องเกม R36S ทันทีหรือไม่?\n\nหน้าจอเครื่องเกมจะดับและโหลดใหม่ใน 2-3 วินาที เพื่อแสดงผลรายชื่อเกมใหม่และรูปปกที่เพิ่งอัปเดตทันทีครับ")) {
+                    return;
+                }
+            }
+
+            showToast("กำลังสั่งรีเฟรชหน้าจอเครื่องเกม R36S...", true);
+            try {
+                const res = await fetch('/api/restart_es', { method: 'POST' });
+                const data = await res.json();
+                if (data && data.success) {
+                    showToast(data.message || "รีเฟรชหน้าจอเครื่องเกมสำเร็จ! เกมใหม่จะแสดงผลทันที", true);
+                } else {
+                    showToast((data && data.error) || "ไม่สามารถรีเฟรชหน้าจอได้", false);
+                }
+            } catch (err) {
+                showToast("ส่งคำสั่งรีเฟรชหน้าจอเครื่องเกมเรียบร้อยแล้ว", true);
             }
         }
 
@@ -2011,7 +2038,7 @@
                 <span>อัปโหลดเสร็จสิ้นทั้งหมด ${successCount} จาก ${appliedItems.length} เกม!</span>
             `;
 
-            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} เกม!`);
+            showToast(`อัปโหลดสำเร็จแล้ว ${successCount} เกม! กดปุ่ม 'อัปเดตหน้าจอเครื่อง' ด้านบนเพื่อรีเฟรชหน้าจอ R36S ทันที`);
             setTimeout(() => {
                 closeUploadModal();
                 btn.disabled = false;

@@ -31,6 +31,10 @@ printf "\033[?25l"
 cleanup() {
     printf "\033[?25h"
     clear
+    echo "=============================================="
+    echo " รีสตาร์ท EmulationStation เพื่ออัปเดตเกมใหม่..."
+    echo "=============================================="
+    sudo systemctl restart emulationstation 2>/dev/null || (sudo killall -9 emulationstation 2>/dev/null; sleep 1; sudo emulationstation &)
     exit 0
 }
 trap cleanup EXIT INT TERM

@@ -508,6 +508,22 @@ class ArkOSGameManager:
             print(f"[ArkOSGameManager] XML parse error {gamelist_path}: {e}")
         return result
 
+    def _save_gamelist_tree(self, tree, system_id, sys_path):
+        """Saves gamelist.xml to ROMs directory and mirrors to ~/.emulationstation if present."""
+        gamelist_path = os.path.join(sys_path, "gamelist.xml")
+        try:
+            tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
+        except Exception as e:
+            print(f"[ArkOSGameManager] XML write error {gamelist_path}: {e}")
+
+        # Mirror to ~/.emulationstation/gamelists/<system_id>/gamelist.xml if it exists
+        es_user_path = os.path.expanduser(f"~/.emulationstation/gamelists/{system_id}/gamelist.xml")
+        if os.path.exists(es_user_path):
+            try:
+                tree.write(es_user_path, encoding='utf-8', xml_declaration=True)
+            except Exception as e:
+                print(f"[ArkOSGameManager] Mirror XML write error {es_user_path}: {e}")
+
     def get_game_by_token(self, token):
         """Retrieve full game metadata via token."""
         return self.token_registry.get(token)
@@ -552,7 +568,7 @@ class ArkOSGameManager:
                 n_elem = ET.SubElement(found_elem, 'name')
             n_elem.text = new_display_name
 
-            tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
+            self._save_gamelist_tree(tree, system_id, sys_path)
 
             self._clear_cache_for_system(system_id)
             game["display_name"] = new_display_name
@@ -609,7 +625,7 @@ class ArkOSGameManager:
                 img_elem = ET.SubElement(found_elem, 'image')
             img_elem.text = rel_cover_path
 
-            tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
+            self._save_gamelist_tree(tree, system_id, sys_path)
 
             cover_mtime = int(os.path.getmtime(cover_abs_path)) if os.path.exists(cover_abs_path) else int(time.time())
             self._clear_cache_for_system(system_id)
@@ -653,7 +669,7 @@ class ArkOSGameManager:
                     if p is not None and p.text and p.text.strip().lower() == target_path:
                         root.remove(g_elem)
                         break
-                tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
+                self._save_gamelist_tree(tree, system_id, sys_path)
 
             self._clear_cache_for_system(system_id)
             if token in self.token_registry:
@@ -732,7 +748,7 @@ class ArkOSGameManager:
                     img_elem = ET.SubElement(target_elem, 'image')
                 img_elem.text = f"./images/{cover_filename}"
 
-            tree.write(gamelist_path, encoding='utf-8', xml_declaration=True)
+            self._save_gamelist_tree(tree, system_id, sys_path)
             self._clear_cache_for_system(system_id)
 
             return {"success": True, "filename": entry_name, "display_name": clean_display}
